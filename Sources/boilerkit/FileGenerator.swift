@@ -1,0 +1,282 @@
+import Foundation
+
+// MARK: - FileGenerator
+
+struct FileGenerator {
+	// MARK: - Properties
+
+	private let config: ProjectConfig
+	private let fileManager = FileManager.default
+
+	// MARK: - Init
+
+	init(config: ProjectConfig) {
+		self.config = config
+	}
+
+	// MARK: - Generate
+
+	func generate() throws {
+		let root = config.outputDirectory.appending("/\(config.appName)")
+
+		print("  ✍️ Creating project structure...")
+
+		try createDirectories(root: root)
+		try writeRootFiles(root: root)
+		try writeRIBFiles(root: root)
+		try writeTabBarFiles(root: root)
+		try writeFeatureFiles(root: root)
+		try writeComponentsPlaceholder(root: root)
+
+		if config.useSwiftData {
+			try writeSwiftDataFiles(root: root)
+		}
+
+		try writePreviewContainer(root: root)
+		try writeAssets(root: root)
+		try writeTestFiles(root: root)
+
+		print("  ✅ Source files written")
+	}
+
+	// MARK: - Directories
+
+	private func createDirectories(root: String) throws {
+		let dirs = [
+			root,
+			"\(root)/\(config.appName)/Root/RIB",
+			"\(root)/\(config.appName)/Core/TabBar",
+			"\(root)/\(config.appName)/Components/Extensions",
+			"\(root)/\(config.appName)/Components/ViewModifiers",
+			"\(root)/\(config.appName)/Components/Views",
+			"\(root)/\(config.appName)/Models/Domain",
+			"\(root)/\(config.appName)/Models/Entities",
+			"\(root)/\(config.appName)/Models/Services",
+			"\(root)/\(config.appName)/Assets.xcassets/AppIcon.appiconset",
+			"\(root)/\(config.appName)/Assets.xcassets/AccentColor.colorset",
+			"\(root)/\(config.appName)Tests/Shared/Mocks",
+		]
+
+		let tabDirs = config.tabs.map {
+			"\(root)/\(config.appName)/Core/\($0.sanitizedName)"
+		}
+
+		for dir in dirs + tabDirs {
+			try fileManager.createDirectory(atPath: dir, withIntermediateDirectories: true)
+		}
+	}
+
+	// MARK: - Root Files
+
+	private func writeRootFiles(root: String) throws {
+		let appDir = "\(root)/\(config.appName)/Root"
+
+		try write(
+			AppTemplate.render(config: config),
+			to: "\(appDir)/\(config.appName)App.swift"
+		)
+		try write(
+			AppDelegateTemplate.render(config: config),
+			to: "\(appDir)/AppDelegate.swift"
+		)
+		try write(
+			DependenciesTemplate.render(config: config),
+			to: "\(appDir)/Dependencies.swift"
+		)
+		try write(
+			DependencyContainerTemplate.render(),
+			to: "\(appDir)/DependencyContainer.swift"
+		)
+	}
+
+	// MARK: - RIB Files
+
+	private func writeRIBFiles(root: String) throws {
+		let ribDir = "\(root)/\(config.appName)/Root/RIB"
+
+		try write(
+			CoreBuilderTemplate.render(config: config),
+			to: "\(ribDir)/CoreBuilder.swift"
+		)
+		try write(
+			CoreInteractorTemplate.render(config: config),
+			to: "\(ribDir)/CoreInteractor.swift"
+		)
+		try write(
+			CoreRouterTemplate.render(config: config),
+			to: "\(ribDir)/CoreRouter.swift"
+		)
+	}
+
+	// MARK: - TabBar Files
+
+	private func writeTabBarFiles(root: String) throws {
+		let tabBarDir = "\(root)/\(config.appName)/Core/TabBar"
+
+		try write(
+			TabBarTemplate.render(config: config),
+			to: "\(tabBarDir)/TabBarView.swift"
+		)
+	}
+
+	// MARK: - Feature Files (one per tab)
+
+	private func writeFeatureFiles(root: String) throws {
+		for tab in config.tabs {
+			let featureDir = "\(root)/\(config.appName)/Core/\(tab.sanitizedName)"
+			try write(
+				FeatureViewTemplate.render(tab: tab),
+				to: "\(featureDir)/\(tab.sanitizedName)View.swift"
+			)
+		}
+	}
+
+	// MARK: - Components Placeholder
+
+	private func writeComponentsPlaceholder(root: String) throws {
+		let placeholder = """
+		// Add reusable extensions here.
+		"""
+		try write(placeholder, to: "\(root)/\(config.appName)/Components/Extensions/.gitkeep")
+	}
+
+	// MARK: - SwiftData Files
+
+	private func writeSwiftDataFiles(root: String) throws {
+		guard let entityName = config.swiftDataEntityName else { return }
+
+		let domainDir = "\(root)/\(config.appName)/Models/Domain"
+		let entitiesDir = "\(root)/\(config.appName)/Models/Entities"
+		let servicesDir = "\(root)/\(config.appName)/Models/Services"
+
+		try write(
+			SwiftDataTemplates.renderDomainModel(entityName: entityName),
+			to: "\(domainDir)/\(entityName).swift"
+		)
+		try write(
+			SwiftDataTemplates.renderEntity(entityName: entityName),
+			to: "\(entitiesDir)/\(entityName)Entity.swift"
+		)
+		try write(
+			SwiftDataTemplates.renderMapper(entityName: entityName),
+			to: "\(servicesDir)/\(entityName)Mapper.swift"
+		)
+		try write(
+			SwiftDataTemplates.renderRepository(entityName: entityName),
+			to: "\(servicesDir)/\(entityName)Repository.swift"
+		)
+		try write(
+			SwiftDataTemplates.renderManager(entityName: entityName),
+			to: "\(servicesDir)/\(entityName)Manager.swift"
+		)
+	}
+
+	// MARK: - Preview Container
+
+	private func writePreviewContainer(root: String) throws {
+		let componentsDir = "\(root)/\(config.appName)/Components"
+		try write(
+			PreviewContainerTemplate.render(config: config),
+			to: "\(componentsDir)/PreviewContainer.swift"
+		)
+	}
+
+	// MARK: - Assets
+
+	private func writeAssets(root: String) throws {
+		let assetsDir = "\(root)/\(config.appName)/Assets.xcassets"
+
+		// Root Contents.json
+		try write(assetsContentsJSON(), to: "\(assetsDir)/Contents.json")
+
+		// AppIcon
+		try write(
+			appIconContentsJSON(),
+			to: "\(assetsDir)/AppIcon.appiconset/Contents.json"
+		)
+
+		// AccentColor
+		try write(
+			accentColorContentsJSON(),
+			to: "\(assetsDir)/AccentColor.colorset/Contents.json"
+		)
+	}
+
+	private func assetsContentsJSON() -> String {
+		"""
+		{
+		  "info" : {
+		    "author" : "xcode",
+		    "version" : 1
+		  }
+		}
+		"""
+	}
+
+	private func appIconContentsJSON() -> String {
+		"""
+		{
+		  "images" : [
+		    {
+		      "idiom" : "universal",
+		      "platform" : "ios",
+		      "size" : "1024x1024"
+		    }
+		  ],
+		  "info" : {
+		    "author" : "xcode",
+		    "version" : 1
+		  }
+		}
+		"""
+	}
+
+	private func accentColorContentsJSON() -> String {
+		"""
+		{
+		  "colors" : [
+		    {
+		      "idiom" : "universal"
+		    }
+		  ],
+		  "info" : {
+		    "author" : "xcode",
+		    "version" : 1
+		  }
+		}
+		"""
+	}
+
+	// MARK: - Test Files
+
+	private func writeTestFiles(root: String) throws {
+		let testsDir = "\(root)/\(config.appName)Tests"
+
+		try write(
+			TestTagsTemplate.render(config: config),
+			to: "\(testsDir)/Tags.swift"
+		)
+	}
+
+	// MARK: - Write Helper
+
+	private func write(_ content: String, to path: String) throws {
+		guard let data = content.data(using: .utf8) else {
+			throw GeneratorError.encodingFailed(path)
+		}
+		fileManager.createFile(atPath: path, contents: data)
+	}
+}
+
+// MARK: - GeneratorError
+
+enum GeneratorError: Error, CustomStringConvertible {
+	case encodingFailed(String)
+
+	var description: String {
+		switch self {
+		case .encodingFailed(let path):
+			return "Failed to encode content for file: \(path)"
+		}
+	}
+}
