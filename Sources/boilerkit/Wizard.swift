@@ -230,7 +230,7 @@ struct Wizard {
     // MARK: - NavigationKit URL
 
     private func askNavigationKitURL() -> String {
-        let defaultValue = "https://github.com/PLACEHOLDER/NavigationKit"
+        let defaultValue = "https://github.com/KociucKy/NavigationKit"
         let input = ask("NavigationKit SPM URL [\(defaultValue)]: ")
         let trimmed = input.trimmingCharacters(in: .whitespaces)
         return trimmed.isEmpty ? defaultValue : trimmed
