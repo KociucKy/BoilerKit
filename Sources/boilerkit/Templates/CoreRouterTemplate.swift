@@ -22,6 +22,14 @@ enum CoreRouterTemplate {
                 router.dismissScreen()
             }
 
+            func popToRoot() {
+                router.popToRoot()
+            }
+
+            func dismissToRoot() {
+                router.dismissToRoot()
+            }
+
             func dismissModal() {
                 router.dismissModal()
             }
