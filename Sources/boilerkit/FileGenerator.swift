@@ -32,6 +32,10 @@ struct FileGenerator {
 			try writeSwiftDataFiles(root: root)
 		}
 
+		if config.useLocalization {
+			try writeLocalizationFiles(root: root)
+		}
+
 		try writeAssets(root: root)
 		try writeTestFiles(root: root)
 
@@ -172,6 +176,27 @@ struct FileGenerator {
 			SwiftDataTemplates.renderManager(entityName: entityName),
 			to: "\(servicesDir)/\(entityName)Manager.swift"
 		)
+	}
+
+	// MARK: - Localization Files
+
+	private func writeLocalizationFiles(root: String) throws {
+		let rootDir = "\(root)/\(config.appName)/Root"
+
+		// Write the String Catalog
+		try write(
+			StringCatalogTemplate.render(config: config),
+			to: "\(rootDir)/Localizable.xcstrings"
+		)
+
+		// Create one .lproj directory per selected language (plus en).
+		// XcodeGen scans for .lproj dirs to populate knownRegions in the .xcodeproj,
+		// which makes all languages appear in Xcode's String Catalog editor.
+		let allLanguages = ["en"] + config.localizationLanguages
+		for lang in allLanguages {
+			let lprojDir = "\(rootDir)/\(lang).lproj"
+			try fileManager.createDirectory(atPath: lprojDir, withIntermediateDirectories: true)
+		}
 	}
 
 	// MARK: - Assets

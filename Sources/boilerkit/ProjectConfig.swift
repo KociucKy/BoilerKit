@@ -56,6 +56,8 @@ struct ProjectConfig {
     let teamID: String?
     let navigationKitURL: String
     let outputDirectory: String
+    let useLocalization: Bool
+    let localizationLanguages: [String]
 
     // MARK: - Computed
 

@@ -22,6 +22,7 @@ struct Wizard {
         let deploymentTargets = askDeploymentTargets(for: platforms)
         let swiftVersion = askSwiftVersion()
         let (useSwiftData, entityName) = askSwiftData()
+        let (useLocalization, localizationLanguages) = askLocalization()
         let tabs = askTabs()
         let navigationKitURL = askNavigationKitURL()
         let outputDirectory = askOutputDirectory(stored: storedConfig.defaultOutputDirectory)
@@ -37,7 +38,9 @@ struct Wizard {
             tabs: tabs,
             teamID: teamID,
             navigationKitURL: navigationKitURL,
-            outputDirectory: outputDirectory
+            outputDirectory: outputDirectory,
+            useLocalization: useLocalization,
+            localizationLanguages: localizationLanguages
         )
 
         printSummary(config)
@@ -163,6 +166,52 @@ struct Wizard {
         return (true, entityName)
     }
 
+
+    private mutating func askLocalization() -> (Bool, [String]) {
+        let useLocalization = askYesNo("Add localizations?", default: false)
+        guard useLocalization else { return (false, []) }
+
+        let available: [(code: String, label: String)] = [
+            ("pl", "Polish"),
+            ("de", "German"),
+            ("fr", "French"),
+            ("es", "Spanish"),
+            ("it", "Italian"),
+            ("pt", "Portuguese"),
+            ("ja", "Japanese"),
+            ("zh-Hans", "Chinese Simplified"),
+            ("zh-Hant", "Chinese Traditional"),
+            ("ar", "Arabic"),
+            ("ru", "Russian"),
+            ("ko", "Korean"),
+        ]
+
+        print("")
+        print("  Available languages (English is always included):")
+        for (i, lang) in available.enumerated() {
+            let index = String(format: "%2d", i + 1)
+            print("    \(index). \(lang.label) (\(lang.code))")
+        }
+        print("")
+
+        let input = askSub("Enter numbers separated by spaces, or press Enter to skip: ")
+        let trimmed = input.trimmingCharacters(in: .whitespaces)
+
+        guard !trimmed.isEmpty else { return (true, []) }
+
+        let selected = trimmed
+            .split(separator: " ")
+            .compactMap { Int($0) }
+            .filter { $0 >= 1 && $0 <= available.count }
+            .map { available[$0 - 1].code }
+
+        // deduplicate while preserving order
+        var seen = Set<String>()
+        let languages = selected.filter { seen.insert($0).inserted }
+
+        return (true, languages)
+    }
+
     // MARK: - Tabs
 
     private mutating func askTabs() -> [Tab] {
@@ -278,6 +327,13 @@ struct Wizard {
 
         if let entity = config.swiftDataEntityName {
             print("  First entity:    \(entity)")
+        }
+
+        if config.useLocalization {
+            let langs = (["en"] + config.localizationLanguages).joined(separator: ", ")
+            print("  Localization:    \(langs)")
+        } else {
+            print("  Localization:    none")
         }
 
         print("  Tabs:")

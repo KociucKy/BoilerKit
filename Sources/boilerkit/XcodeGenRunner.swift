@@ -93,6 +93,7 @@ struct XcodeGenRunner {
                 ENABLE_USER_SCRIPT_SANDBOXING: YES
                 ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
                 ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        \(localizationSettingsYML())\
         \(signingSettingsYML())
               configs:
                 Mock:
@@ -161,8 +162,15 @@ struct XcodeGenRunner {
         """
     }
 
-    private func signingSettingsYML() -> String {
-        if let teamID = config.teamID {
+    private func localizationSettingsYML() -> String {
+        guard config.useLocalization else { return "" }
+        return """
+                LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+
+        """
+    }
+
+    private func signingSettingsYML() -> String {        if let teamID = config.teamID {
             return """
                     DEVELOPMENT_TEAM: \(teamID)
                     CODE_SIGN_STYLE: Automatic
