@@ -90,7 +90,6 @@ enum SwiftDataTemplates {
 
         // MARK: - \(entityName)Repository
 
-        @MainActor
         protocol \(entityName)Repository {
             func fetchAll() throws -> [\(entityName)]
             func save(_ item: \(entityName)) throws
@@ -99,7 +98,6 @@ enum SwiftDataTemplates {
 
         // MARK: - Mock\(entityName)Repository
 
-        @MainActor
         final class Mock\(entityName)Repository: \(entityName)Repository {
 
             // MARK: - Properties
@@ -127,7 +125,6 @@ enum SwiftDataTemplates {
 
         // MARK: - SwiftData\(entityName)Repository
 
-        @MainActor
         final class SwiftData\(entityName)Repository: \(entityName)Repository {
 
             // MARK: - Properties
@@ -175,7 +172,6 @@ enum SwiftDataTemplates {
 
         // MARK: - \(entityName)Manager
 
-        @MainActor
         final class \(entityName)Manager {
 
             // MARK: - Properties
