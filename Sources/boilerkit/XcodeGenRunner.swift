@@ -162,7 +162,7 @@ struct XcodeGenRunner {
             """
         } else {
             return """
-                    CODE_SIGN_STYLE: Manual
+                    CODE_SIGN_STYLE: Automatic
             """
         }
     }

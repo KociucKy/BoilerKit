@@ -11,12 +11,12 @@ struct Wizard {
 
         let appName = askAppName()
         let bundleID = askBundleID(appName: appName)
+        let teamID = askTeamID()
         let platforms = askPlatforms()
         let deploymentTargets = askDeploymentTargets(for: platforms)
         let swiftVersion = askSwiftVersion()
         let (useSwiftData, entityName) = askSwiftData()
         let tabs = askTabs()
-        let teamID = askTeamID()
         let navigationKitURL = askNavigationKitURL()
         let outputDirectory = askOutputDirectory()
 
