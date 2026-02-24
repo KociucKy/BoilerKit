@@ -3,7 +3,12 @@
 enum DependenciesTemplate {
     static func render(config: ProjectConfig) -> String {
         let swiftDataImport = config.useSwiftData ? "\nimport SwiftData" : ""
-        let swiftDataContainer = config.useSwiftData ? swiftDataContainerBlock(config: config) : ""
+        let modelContainerProperty = config.useSwiftData
+            ? "\n        let modelContainer: ModelContainer"
+            : ""
+        let modelContainerInit = config.useSwiftData
+            ? "\n                modelContainer = try! ModelContainer(for: \(entityTypes(config: config)))"
+            : ""
 
         return """
         import Foundation\(swiftDataImport)
@@ -23,12 +28,12 @@ enum DependenciesTemplate {
 
             // MARK: - Properties
 
-            let container: DependencyContainer
-            \(swiftDataContainer)
+            let container: DependencyContainer\(modelContainerProperty)
+
             // MARK: - Init
 
             init(configuration: BuildConfiguration) {
-                container = DependencyContainer()
+                container = DependencyContainer()\(modelContainerInit)
                 registerDependencies(configuration: configuration)
             }
 
@@ -55,7 +60,8 @@ enum DependenciesTemplate {
         .replacingOccurrences(of: "{{APP_NAME}}", with: config.appName)
     }
 
-    private static func swiftDataContainerBlock(config: ProjectConfig) -> String {
-        "let modelContainer: ModelContainer\n"
+    private static func entityTypes(config: ProjectConfig) -> String {
+        guard let entityName = config.swiftDataEntityName else { return "" }
+        return "\(entityName)Entity.self"
     }
 }

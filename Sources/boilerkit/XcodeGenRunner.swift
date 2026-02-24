@@ -87,7 +87,6 @@ struct XcodeGenRunner {
                   - UIInterfaceOrientationLandscapeRight
             settings:
               base:
-                PRODUCT_BUNDLE_IDENTIFIER: \(config.bundleID)
                 SWIFT_VERSION: \(config.swiftVersion)
                 MARKETING_VERSION: "1.0"
                 CURRENT_PROJECT_VERSION: "1"
@@ -95,9 +94,16 @@ struct XcodeGenRunner {
                 ENABLE_USER_SCRIPT_SANDBOXING: YES
                 SWIFT_EMIT_LOC_STRINGS: YES
         \(signingSettingsYML())
-            scheme:
-              testTargets:
-                - \(config.appName)Tests
+              configs:
+                Mock:
+                  PRODUCT_BUNDLE_IDENTIFIER: \(config.bundleID).mock
+                  INFOPLIST_KEY_CFBundleDisplayName: "\(config.appName) - Mock"
+                Debug:
+                  PRODUCT_BUNDLE_IDENTIFIER: \(config.bundleID).dev
+                  INFOPLIST_KEY_CFBundleDisplayName: "\(config.appName) - Dev"
+                Release:
+                  PRODUCT_BUNDLE_IDENTIFIER: \(config.bundleID)
+                  INFOPLIST_KEY_CFBundleDisplayName: "\(config.appName)"
 
           \(config.appName)Tests:
             type: bundle.unit-test
@@ -113,6 +119,7 @@ struct XcodeGenRunner {
                 PRODUCT_BUNDLE_IDENTIFIER: \(config.bundleID).tests
                 SWIFT_VERSION: \(config.swiftVersion)
 
+        \(schemesYML())
         \(configurationsYML())
         """
 
@@ -167,30 +174,75 @@ struct XcodeGenRunner {
         }
     }
 
+    private func schemesYML() -> String {
+        """
+        schemes:
+          \(config.appName) - Mock:
+            build:
+              targets:
+                \(config.appName): all
+            test:
+              config: Mock
+              targets:
+                - \(config.appName)Tests
+            run:
+              config: Mock
+            profile:
+              config: Mock
+            analyze:
+              config: Mock
+            archive:
+              config: Mock
+
+          \(config.appName) - Dev:
+            build:
+              targets:
+                \(config.appName): all
+            test:
+              config: Debug
+            run:
+              config: Debug
+            profile:
+              config: Debug
+            analyze:
+              config: Debug
+            archive:
+              config: Debug
+
+          \(config.appName) - Prod:
+            build:
+              targets:
+                \(config.appName): all
+            test:
+              config: Release
+            run:
+              config: Release
+              debugEnabled: false
+            profile:
+              config: Release
+            analyze:
+              config: Release
+            archive:
+              config: Release
+        """
+    }
+
     private func configurationsYML() -> String {
         """
         configs:
           Mock: debug
-          Dev: debug
-          Prod: release
-
-        configFiles:
-          Mock:
-            \(config.appName): ""
-          Dev:
-            \(config.appName): ""
-          Prod:
-            \(config.appName): ""
+          Debug: debug
+          Release: release
 
         settings:
           configs:
             Mock:
               base:
                 SWIFT_ACTIVE_COMPILATION_CONDITIONS: MOCK
-            Dev:
+            Debug:
               base:
                 SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEV
-            Prod:
+            Release:
               base:
                 SWIFT_ACTIVE_COMPILATION_CONDITIONS: ""
         """
