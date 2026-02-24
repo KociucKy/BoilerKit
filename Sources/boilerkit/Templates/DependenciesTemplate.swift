@@ -3,12 +3,11 @@
 enum DependenciesTemplate {
     static func render(config: ProjectConfig) -> String {
         let swiftDataImport = config.useSwiftData ? "\nimport SwiftData" : ""
-        let modelContainerProperty = config.useSwiftData
-            ? "\n        let modelContainer: ModelContainer"
-            : ""
-        let modelContainerInit = config.useSwiftData
-            ? "\n                modelContainer = try! ModelContainer(for: \(entityTypes(config: config)))"
-            : ""
+        let modelContainerInit = config.useSwiftData ? modelContainerBlock(config: config) : ""
+        let managerRegistrations = config.useSwiftData ? swiftDataRegistrations(config: config) : noSwiftDataRegistrations()
+        let devPreviewManagerProps = config.useSwiftData ? devPreviewManagerProperties(config: config) : ""
+        let devPreviewManagerInit = config.useSwiftData ? devPreviewManagerInit(config: config) : ""
+        let devPreviewContainerRegistrations = config.useSwiftData ? devPreviewContainerBody(config: config) : ""
 
         return """
         import Foundation\(swiftDataImport)
@@ -16,52 +15,118 @@ enum DependenciesTemplate {
         // MARK: - BuildConfiguration
 
         enum BuildConfiguration {
-            case mock
-            case dev
-            case prod
+            case mock, dev, prod
         }
 
         // MARK: - Dependencies
 
-        @MainActor
-        final class Dependencies {
+        struct Dependencies {
 
             // MARK: - Properties
 
-            let container: DependencyContainer\(modelContainerProperty)
+            let dependencyContainer: DependencyContainer
 
             // MARK: - Init
 
-            init(configuration: BuildConfiguration) {
-                container = DependencyContainer()\(modelContainerInit)
-                registerDependencies(configuration: configuration)
+            init(config: BuildConfiguration) {
+        \(modelContainerInit)
+                let dependencyContainer = DependencyContainer()
+        \(managerRegistrations)
+                self.dependencyContainer = dependencyContainer
+            }
+        }
+
+        // MARK: - DevPreview
+
+        @MainActor
+        final class DevPreview {
+
+            // MARK: - Shared
+
+            static let shared = DevPreview()
+
+            // MARK: - Properties
+        \(devPreviewManagerProps)
+            var container: DependencyContainer {
+                let container = DependencyContainer()
+        \(devPreviewContainerRegistrations)
+                return container
             }
 
-            // MARK: - Registration
+            // MARK: - Init
 
-            private func registerDependencies(configuration: BuildConfiguration) {
-                switch configuration {
-                case .mock:
-                    registerMockDependencies()
-                case .dev, .prod:
-                    registerLiveDependencies()
-                }
-            }
-
-            private func registerMockDependencies() {
-                // TODO: Register mock managers
-            }
-
-            private func registerLiveDependencies() {
-                // TODO: Register live managers
+            init() {
+        \(devPreviewManagerInit)
             }
         }
         """
-        .replacingOccurrences(of: "{{APP_NAME}}", with: config.appName)
     }
 
-    private static func entityTypes(config: ProjectConfig) -> String {
+    // MARK: - SwiftData blocks
+
+    private static func modelContainerBlock(config: ProjectConfig) -> String {
         guard let entityName = config.swiftDataEntityName else { return "" }
-        return "\(entityName)Entity.self"
+        return """
+                let modelContainer = try! ModelContainer(for: \(entityName)Entity.self)
+        """
+    }
+
+    private static func swiftDataRegistrations(config: ProjectConfig) -> String {
+        guard let entityName = config.swiftDataEntityName else { return noSwiftDataRegistrations() }
+        let lower = entityName.lowercased()
+        return """
+                let \(lower)Manager: \(entityName)Manager
+
+                switch config {
+                case .mock:
+                    \(lower)Manager = \(entityName)Manager(
+                        repository: Mock\(entityName)Repository()
+                    )
+                case .dev, .prod:
+                    \(lower)Manager = \(entityName)Manager(
+                        repository: SwiftData\(entityName)Repository(container: modelContainer)
+                    )
+                }
+
+                dependencyContainer.register(\(entityName)Manager.self, service: \(lower)Manager)
+        """
+    }
+
+    private static func noSwiftDataRegistrations() -> String {
+        """
+                // TODO: Register managers
+        """
+    }
+
+    // MARK: - DevPreview blocks
+
+    private static func devPreviewManagerProperties(config: ProjectConfig) -> String {
+        guard let entityName = config.swiftDataEntityName else { return "" }
+        let lower = entityName.lowercased()
+        return """
+
+            let \(lower)Manager: \(entityName)Manager
+
+        """
+    }
+
+    private static func devPreviewManagerInit(config: ProjectConfig) -> String {
+        guard let entityName = config.swiftDataEntityName else {
+            return "        // TODO: Initialize preview managers"
+        }
+        let lower = entityName.lowercased()
+        return """
+                self.\(lower)Manager = \(entityName)Manager(
+                    repository: Mock\(entityName)Repository()
+                )
+        """
+    }
+
+    private static func devPreviewContainerBody(config: ProjectConfig) -> String {
+        guard let entityName = config.swiftDataEntityName else { return "" }
+        let lower = entityName.lowercased()
+        return """
+                container.register(\(entityName)Manager.self, service: \(lower)Manager)
+        """
     }
 }

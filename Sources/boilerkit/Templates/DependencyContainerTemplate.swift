@@ -7,29 +7,31 @@ enum DependencyContainerTemplate {
 
         // MARK: - DependencyContainer
 
+        @Observable
         @MainActor
         final class DependencyContainer {
 
             // MARK: - Properties
 
-            private var factories: [ObjectIdentifier: () -> Any] = [:]
+            private var services: [String: Any] = [:]
 
             // MARK: - Registration
 
-            func register<T>(_ type: T.Type, factory: @escaping () -> T) {
-                factories[ObjectIdentifier(type)] = factory
+            func register<T>(_ type: T.Type, service: T) {
+                let key = "\\(type)"
+                services[key] = service
+            }
+
+            func register<T>(_ type: T.Type, service: () -> T) {
+                let key = "\\(type)"
+                services[key] = service()
             }
 
             // MARK: - Resolution
 
-            func resolve<T>(_ type: T.Type) -> T {
-                guard let factory = factories[ObjectIdentifier(type)] else {
-                    fatalError("No registration found for type \\(type). Did you forget to register it in Dependencies?")
-                }
-                guard let resolved = factory() as? T else {
-                    fatalError("Failed to cast resolved instance to \\(type).")
-                }
-                return resolved
+            func resolve<T>(_ type: T.Type) -> T? {
+                let key = "\\(type)"
+                return services[key] as? T
             }
         }
         """

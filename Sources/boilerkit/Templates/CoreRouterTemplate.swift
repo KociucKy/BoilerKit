@@ -2,31 +2,19 @@
 
 enum CoreRouterTemplate {
     static func render(config: ProjectConfig) -> String {
-        let conformances = config.tabs
-            .map { "\($0.sanitizedName)Router" }
-            .joined(separator: ",\n    ")
-
-        let conformanceList = config.tabs.isEmpty
-            ? ""
-            : ": \(conformances)"
-
         return """
+        import SwiftUI
         import NavigationKit
 
         // MARK: - CoreRouter
 
         @MainActor
-        final class CoreRouter\(conformanceList) {
+        struct CoreRouter {
 
             // MARK: - Properties
 
-            private let router: NavigationKit.Router
-
-            // MARK: - Init
-
-            init(router: NavigationKit.Router) {
-                self.router = router
-            }
+            let router: Router
+            let builder: CoreBuilder
 
             // MARK: - Navigation
 
@@ -36,6 +24,10 @@ enum CoreRouterTemplate {
 
             func dismissModal() {
                 router.dismissModal()
+            }
+
+            func dismissAlert() {
+                router.dismissAlet()
             }
         }
         """

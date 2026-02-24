@@ -32,7 +32,6 @@ struct FileGenerator {
 			try writeSwiftDataFiles(root: root)
 		}
 
-		try writePreviewContainer(root: root)
 		try writeAssets(root: root)
 		try writeTestFiles(root: root)
 
@@ -94,6 +93,10 @@ struct FileGenerator {
 	private func writeRIBFiles(root: String) throws {
 		let ribDir = "\(root)/\(config.appName)/Root/RIB"
 
+		try write(
+			BuilderTemplate.render(),
+			to: "\(ribDir)/Builder.swift"
+		)
 		try write(
 			CoreBuilderTemplate.render(config: config),
 			to: "\(ribDir)/CoreBuilder.swift"
@@ -168,16 +171,6 @@ struct FileGenerator {
 		try write(
 			SwiftDataTemplates.renderManager(entityName: entityName),
 			to: "\(servicesDir)/\(entityName)Manager.swift"
-		)
-	}
-
-	// MARK: - Preview Container
-
-	private func writePreviewContainer(root: String) throws {
-		let componentsDir = "\(root)/\(config.appName)/Components"
-		try write(
-			PreviewContainerTemplate.render(config: config),
-			to: "\(componentsDir)/PreviewContainer.swift"
 		)
 	}
 

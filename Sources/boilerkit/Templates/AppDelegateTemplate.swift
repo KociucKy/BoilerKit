@@ -5,12 +5,12 @@ enum AppDelegateTemplate {
         """
         import UIKit
 
-        @MainActor
         final class AppDelegate: NSObject, UIApplicationDelegate {
 
             // MARK: - Properties
 
-            private(set) var dependencies: Dependencies?
+            var dependencies: Dependencies!
+            var builder: CoreBuilder!
 
             // MARK: - UIApplicationDelegate
 
@@ -20,13 +20,20 @@ enum AppDelegateTemplate {
             ) -> Bool {
                 #if MOCK
                 let config = BuildConfiguration.mock
+                print("✅ MOCK")
                 #elseif DEV
                 let config = BuildConfiguration.dev
+                print("✅ DEV")
                 #else
                 let config = BuildConfiguration.prod
+                print("✅ PROD")
                 #endif
 
-                dependencies = Dependencies(configuration: config)
+                dependencies = Dependencies(config: config)
+                builder = CoreBuilder(
+                    interactor: CoreInteractor(container: dependencies.dependencyContainer)
+                )
+
                 return true
             }
         }

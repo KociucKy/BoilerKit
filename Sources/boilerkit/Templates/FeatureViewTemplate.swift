@@ -3,6 +3,7 @@
 enum FeatureViewTemplate {
     static func render(tab: Tab) -> String {
         let feature = tab.sanitizedName
+        let featureLower = feature.lowercased()
 
         return """
         import SwiftUI
@@ -56,21 +57,19 @@ enum FeatureViewTemplate {
             // MARK: - Body
 
             var body: some View {
-                NavigationStack {
-                    Text("\(feature)")
-                        .navigationTitle("\(feature)")
-                }
+                Text("\(feature)")
+                    .navigationTitle("\(feature)")
             }
         }
 
         // MARK: - Preview
 
         #Preview {
-            RouterView { router in
-                let interactor = PreviewContainer.shared.coreInteractor
-                let coreRouter = CoreRouter(router: router)
-                let presenter = \(feature)Presenter(interactor: interactor, router: coreRouter)
-                \(feature)View(presenter: presenter)
+            let container = DevPreview.shared.container
+            let builder = CoreBuilder(interactor: CoreInteractor(container: container))
+
+            return RouterView { router in
+                builder.\(featureLower)View(router: router)
             }
         }
         """

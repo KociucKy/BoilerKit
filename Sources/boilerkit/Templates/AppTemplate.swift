@@ -6,23 +6,20 @@ enum AppTemplate {
         import SwiftUI
 
         @main
-        struct {{APP_NAME}}App: App {
+        struct \(config.appName)App: App {
 
             // MARK: - Properties
 
-            @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+            @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
 
             // MARK: - Body
 
             var body: some Scene {
                 WindowGroup {
-                    if let dependencies = appDelegate.dependencies {
-                        CoreBuilder(dependencies: dependencies).rootView()
-                    }
+                    delegate.builder.build()
                 }
             }
         }
         """
-        .replacingOccurrences(of: "{{APP_NAME}}", with: config.appName)
     }
 }

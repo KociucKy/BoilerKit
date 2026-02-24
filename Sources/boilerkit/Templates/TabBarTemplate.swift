@@ -2,39 +2,35 @@
 
 enum TabBarTemplate {
     static func render(config: ProjectConfig) -> String {
-        let tabItems = config.tabs.map { tab in
-            """
-                    \(tab.sanitizedName)Tab(builder: builder, router: router)
-                        .tabItem {
-                            Label("\(tab.sanitizedName)", systemImage: "\(tab.sfSymbol)")
-                        }
-            """
-        }.joined(separator: "\n")
-
-        let tabViews = config.tabs.map { tab in
-            """
-
-            // MARK: - \(tab.sanitizedName)Tab
-
-            private struct \(tab.sanitizedName)Tab: View {
-
-                // MARK: - Properties
-
-                let builder: CoreBuilder
-                let router: NavigationKit.Router
-
-                // MARK: - Body
-
-                var body: some View {
-                    builder.\(tab.sanitizedName.lowercased())View(router: router)
-                }
-            }
-            """
-        }.joined(separator: "\n")
-
         return """
         import SwiftUI
-        import NavigationKit
+
+        // MARK: - TabBarScreen
+
+        struct TabBarScreen: Identifiable {
+
+            // MARK: - Properties
+
+            var id: String { title }
+            let title: String
+            let systemImage: String
+            let role: TabRole?
+            @ViewBuilder var screen: () -> AnyView
+
+            // MARK: - Init
+
+            init(
+                title: String,
+                systemImage: String,
+                role: TabRole? = nil,
+                screen: @escaping () -> AnyView
+            ) {
+                self.title = title
+                self.systemImage = systemImage
+                self.role = role
+                self.screen = screen
+            }
+        }
 
         // MARK: - TabBarView
 
@@ -42,18 +38,35 @@ enum TabBarTemplate {
 
             // MARK: - Properties
 
-            let builder: CoreBuilder
-            let router: NavigationKit.Router
+            var tabs: [TabBarScreen]
 
             // MARK: - Body
 
             var body: some View {
                 TabView {
-        \(tabItems)
+                    ForEach(tabs) { tab in
+                        if let role = tab.role {
+                            Tab(role: role) {
+                                tabView(tab)
+                            }
+                        } else {
+                            Tab {
+                                tab.screen()
+                            } label: {
+                                Label(tab.title, systemImage: tab.systemImage)
+                            }
+                        }
+                    }
                 }
             }
+
+            private func tabView(_ tab: TabBarScreen) -> some View {
+                tab.screen()
+                    .tabItem {
+                        Label(tab.title, systemImage: tab.systemImage)
+                    }
+            }
         }
-        \(tabViews)
         """
     }
 }
