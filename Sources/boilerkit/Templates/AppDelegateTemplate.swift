@@ -5,6 +5,7 @@ enum AppDelegateTemplate {
         """
         import UIKit
 
+        @MainActor
         final class AppDelegate: NSObject, UIApplicationDelegate {
 
             // MARK: - Properties

@@ -20,6 +20,7 @@ enum DependenciesTemplate {
 
         // MARK: - Dependencies
 
+        @MainActor
         struct Dependencies {
 
             // MARK: - Properties
