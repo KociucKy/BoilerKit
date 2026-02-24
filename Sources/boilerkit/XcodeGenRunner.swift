@@ -90,9 +90,10 @@ struct XcodeGenRunner {
                 SWIFT_VERSION: \(config.swiftVersion)
                 MARKETING_VERSION: "1.0"
                 CURRENT_PROJECT_VERSION: "1"
-                ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: YES
                 ENABLE_USER_SCRIPT_SANDBOXING: YES
                 SWIFT_EMIT_LOC_STRINGS: YES
+                ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+                ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         \(signingSettingsYML())
               configs:
                 Mock:
@@ -239,12 +240,15 @@ struct XcodeGenRunner {
             Mock:
               base:
                 SWIFT_ACTIVE_COMPILATION_CONDITIONS: MOCK
+                ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: YES
             Debug:
               base:
                 SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEV
+                ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: YES
             Release:
               base:
                 SWIFT_ACTIVE_COMPILATION_CONDITIONS: ""
+                ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: YES
         """
     }
 
