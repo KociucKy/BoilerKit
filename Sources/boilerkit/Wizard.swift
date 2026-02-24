@@ -9,16 +9,18 @@ struct Wizard {
     func run() -> ProjectConfig {
         printBanner()
 
+        let storedConfig = ConfigStore.load()
+
         let appName = askAppName()
         let bundleID = askBundleID(appName: appName)
-        let teamID = askTeamID()
+        let teamID = askTeamID(stored: storedConfig.defaultTeamID)
         let platforms = askPlatforms()
         let deploymentTargets = askDeploymentTargets(for: platforms)
         let swiftVersion = askSwiftVersion()
         let (useSwiftData, entityName) = askSwiftData()
         let tabs = askTabs()
         let navigationKitURL = askNavigationKitURL()
-        let outputDirectory = askOutputDirectory()
+        let outputDirectory = askOutputDirectory(stored: storedConfig.defaultOutputDirectory)
 
         let config = ProjectConfig(
             appName: appName,
@@ -36,6 +38,7 @@ struct Wizard {
 
         printSummary(config)
         confirmGeneration()
+        offerSaveDefaults(config: config, stored: storedConfig)
 
         return config
     }
@@ -221,8 +224,13 @@ struct Wizard {
 
     // MARK: - Team ID
 
-    private func askTeamID() -> String? {
-        let input = ask("Apple Team ID (press Enter to use manual signing): ")
+    private func askTeamID(stored: String?) -> String? {
+        if let stored {
+            print("  Team ID: \(stored) (default — run 'boilerkit config' to change)")
+            return stored
+        }
+
+        let input = ask("Apple Team ID (press Enter to skip): ")
         let trimmed = input.trimmingCharacters(in: .whitespaces)
         return trimmed.isEmpty ? nil : trimmed
     }
@@ -238,11 +246,17 @@ struct Wizard {
 
     // MARK: - Output Directory
 
-    private func askOutputDirectory() -> String {
+    private func askOutputDirectory(stored: String?) -> String {
+        if let stored {
+            print("  Output: \(stored) (default — run 'boilerkit config' to change)")
+            return stored
+        }
+
         let defaultValue = FileManager.default.currentDirectoryPath
         let input = ask("Output directory [\(defaultValue)]: ")
         let trimmed = input.trimmingCharacters(in: .whitespaces)
-        return trimmed.isEmpty ? defaultValue : trimmed
+        let raw = trimmed.isEmpty ? defaultValue : trimmed
+        return (raw as NSString).expandingTildeInPath
     }
 
     // MARK: - Summary
@@ -274,7 +288,7 @@ struct Wizard {
         }
 
         print("  Build configs:   Mock, Dev, Prod")
-        print("  Team ID:         \(config.teamID ?? "manual signing")")
+        print("  Team ID:         \(config.teamID ?? "none")")
         print("  NavigationKit:   \(config.navigationKitURL)")
         print("  Output:          \(config.outputDirectory)")
         print("  ──────────────────────────────────────")
@@ -299,6 +313,35 @@ struct Wizard {
                 printError("Please enter Y or n.")
             }
         }
+    }
+
+    // MARK: - Save Defaults
+
+    private func offerSaveDefaults(config: ProjectConfig, stored: BoilerkitConfig) {
+        let shouldOfferOutput = stored.defaultOutputDirectory == nil
+        let shouldOfferTeamID = stored.defaultTeamID == nil && config.teamID != nil
+
+        guard shouldOfferOutput || shouldOfferTeamID else { return }
+
+        var parts: [String] = []
+        if shouldOfferOutput { parts.append("output directory") }
+        if shouldOfferTeamID { parts.append("Team ID") }
+        let label = parts.joined(separator: " and ")
+
+        let save = askYesNo("Save \(label) as defaults for future projects?", default: true)
+        guard save else { return }
+
+        ConfigStore.update { c in
+            if shouldOfferOutput {
+                c.defaultOutputDirectory = config.outputDirectory
+            }
+            if shouldOfferTeamID {
+                c.defaultTeamID = config.teamID
+            }
+        }
+
+        print("  ✅ Defaults saved. Run 'boilerkit config' to view or change them.")
+        print("")
     }
 
     // MARK: - Helpers
