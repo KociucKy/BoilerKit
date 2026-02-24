@@ -86,6 +86,7 @@ enum SwiftDataTemplates {
     static func renderRepository(entityName: String) -> String {
         """
         import Foundation
+        import SwiftData
 
         // MARK: - \(entityName)Repository
 
