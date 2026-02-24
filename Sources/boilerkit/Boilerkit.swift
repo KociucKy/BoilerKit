@@ -32,7 +32,8 @@ extension Boilerkit {
         // MARK: - Run
 
         func run() throws {
-            let config = Wizard().run()
+            var wizard = Wizard()
+            let config = wizard.run()
 
             print("  🔨 Generating source files...")
 

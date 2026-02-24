@@ -4,9 +4,13 @@ import Foundation
 
 struct Wizard {
 
+    // MARK: - State
+
+    private var step = 0
+
     // MARK: - Run
 
-    func run() -> ProjectConfig {
+    mutating func run() -> ProjectConfig {
         printBanner()
 
         let storedConfig = ConfigStore.load()
@@ -55,33 +59,29 @@ struct Wizard {
 
     // MARK: - App Name
 
-    private func askAppName() -> String {
+    private mutating func askAppName() -> String {
+        var input = ask("App name (e.g. MyApp, no spaces): ")
+
         while true {
-            let input = ask("App name (e.g. MyApp, no spaces): ")
             let trimmed = input.trimmingCharacters(in: .whitespaces)
 
-            guard !trimmed.isEmpty else {
+            if trimmed.isEmpty {
                 printError("App name cannot be empty.")
-                continue
-            }
-
-            guard !trimmed.contains(" ") else {
+            } else if trimmed.contains(" ") {
                 printError("App name cannot contain spaces. Use PascalCase (e.g. MyApp).")
-                continue
-            }
-
-            guard trimmed.first?.isLetter == true else {
+            } else if trimmed.first?.isLetter != true {
                 printError("App name must start with a letter.")
-                continue
+            } else {
+                return trimmed
             }
 
-            return trimmed
+            input = reask("App name (e.g. MyApp, no spaces): ")
         }
     }
 
     // MARK: - Bundle ID
 
-    private func askBundleID(appName: String) -> String {
+    private mutating func askBundleID(appName: String) -> String {
         let defaultValue = "com.yourcompany.\(appName.lowercased())"
         let input = ask("Bundle ID [\(defaultValue)]: ")
         let trimmed = input.trimmingCharacters(in: .whitespaces)
@@ -90,7 +90,7 @@ struct Wizard {
 
     // MARK: - Platforms
 
-    private func askPlatforms() -> [Platform] {
+    private mutating func askPlatforms() -> [Platform] {
         print("  Target platforms (iOS is always included):")
         print("    1. macOS")
         print("    2. watchOS")
@@ -124,7 +124,7 @@ struct Wizard {
 
     // MARK: - Deployment Targets
 
-    private func askDeploymentTargets(for platforms: [Platform]) -> [Platform: String] {
+    private mutating func askDeploymentTargets(for platforms: [Platform]) -> [Platform: String] {
         print("")
         print("  Deployment targets (press Enter to accept defaults):")
 
@@ -132,7 +132,7 @@ struct Wizard {
 
         for platform in platforms {
             let defaultValue = platform.defaultDeploymentTarget
-            let input = ask("  \(platform.rawValue) [\(defaultValue)]: ")
+            let input = askSub("\(platform.rawValue) [\(defaultValue)]: ")
             let trimmed = input.trimmingCharacters(in: .whitespaces)
             targets[platform] = trimmed.isEmpty ? defaultValue : trimmed
         }
@@ -142,7 +142,7 @@ struct Wizard {
 
     // MARK: - Swift Version
 
-    private func askSwiftVersion() -> String {
+    private mutating func askSwiftVersion() -> String {
         let defaultValue = "6.0"
         let input = ask("Swift version [\(defaultValue)]: ")
         let trimmed = input.trimmingCharacters(in: .whitespaces)
@@ -151,12 +151,12 @@ struct Wizard {
 
     // MARK: - SwiftData
 
-    private func askSwiftData() -> (Bool, String?) {
+    private mutating func askSwiftData() -> (Bool, String?) {
         let useSwiftData = askYesNo("Use SwiftData for persistence?", default: true)
 
         guard useSwiftData else { return (false, nil) }
 
-        let input = ask("First entity name (e.g. Item), or press Enter to skip: ")
+        let input = askSub("First entity name (e.g. Item), or press Enter to skip: ")
         let trimmed = input.trimmingCharacters(in: .whitespaces)
         let entityName = trimmed.isEmpty ? nil : trimmed.capitalized
 
@@ -165,20 +165,18 @@ struct Wizard {
 
     // MARK: - Tabs
 
-    private func askTabs() -> [Tab] {
+    private mutating func askTabs() -> [Tab] {
         var count: Int = 0
 
+        var input = ask("Number of tabs (1–6): ")
         while true {
-            let input = ask("Number of tabs (1–6): ")
             let trimmed = input.trimmingCharacters(in: .whitespaces)
-
-            guard let value = Int(trimmed), value >= 1, value <= 6 else {
-                printError("Please enter a number between 1 and 6.")
-                continue
+            if let value = Int(trimmed), value >= 1, value <= 6 {
+                count = value
+                break
             }
-
-            count = value
-            break
+            printError("Please enter a number between 1 and 6.")
+            input = reask("Number of tabs (1–6): ")
         }
 
         print("")
@@ -188,17 +186,17 @@ struct Wizard {
 
         for i in 1...count {
             print("  Tab \(i):")
-            let name = askTabName(index: i)
-            let symbol = askSFSymbol(tabName: name)
+            let name = askTabName()
+            let symbol = askSFSymbol()
             tabs.append(Tab(name: name, sfSymbol: symbol))
         }
 
         return tabs
     }
 
-    private func askTabName(index: Int) -> String {
+    private func askTabName() -> String {
         while true {
-            let input = ask("    Name (e.g. Home): ")
+            let input = askSub("    Name (e.g. Home): ")
             let trimmed = input.trimmingCharacters(in: .whitespaces)
 
             guard !trimmed.isEmpty else {
@@ -215,16 +213,16 @@ struct Wizard {
         }
     }
 
-    private func askSFSymbol(tabName: String) -> String {
+    private func askSFSymbol() -> String {
         let defaultValue = "circle"
-        let input = ask("    SF Symbol [\(defaultValue)]: ")
+        let input = askSub("    SF Symbol [\(defaultValue)]: ")
         let trimmed = input.trimmingCharacters(in: .whitespaces)
         return trimmed.isEmpty ? defaultValue : trimmed
     }
 
     // MARK: - Team ID
 
-    private func askTeamID(stored: String?) -> String? {
+    private mutating func askTeamID(stored: String?) -> String? {
         if let stored {
             print("  Team ID: \(stored) (default — run 'boilerkit config' to change)")
             return stored
@@ -237,7 +235,7 @@ struct Wizard {
 
     // MARK: - NavigationKit URL
 
-    private func askNavigationKitURL() -> String {
+    private mutating func askNavigationKitURL() -> String {
         let defaultValue = "https://github.com/KociucKy/NavigationKit"
         let input = ask("NavigationKit SPM URL [\(defaultValue)]: ")
         let trimmed = input.trimmingCharacters(in: .whitespaces)
@@ -246,7 +244,7 @@ struct Wizard {
 
     // MARK: - Output Directory
 
-    private func askOutputDirectory(stored: String?) -> String {
+    private mutating func askOutputDirectory(stored: String?) -> String {
         if let stored {
             print("  Output: \(stored) (default — run 'boilerkit config' to change)")
             return stored
@@ -297,9 +295,10 @@ struct Wizard {
 
     // MARK: - Confirmation
 
-    private func confirmGeneration() {
+    private mutating func confirmGeneration() {
+        var input = ask("Generate project? [Y/n]: ")
+
         while true {
-            let input = ask("Generate project? [Y/n]: ")
             let trimmed = input.trimmingCharacters(in: .whitespaces).lowercased()
 
             if trimmed.isEmpty || trimmed == "y" || trimmed == "yes" {
@@ -311,13 +310,14 @@ struct Wizard {
                 exit(0)
             } else {
                 printError("Please enter Y or n.")
+                input = reask("Generate project? [Y/n]: ")
             }
         }
     }
 
     // MARK: - Save Defaults
 
-    private func offerSaveDefaults(config: ProjectConfig, stored: BoilerkitConfig) {
+    private mutating func offerSaveDefaults(config: ProjectConfig, stored: BoilerkitConfig) {
         let shouldOfferOutput = stored.defaultOutputDirectory == nil
         let shouldOfferTeamID = stored.defaultTeamID == nil && config.teamID != nil
 
@@ -346,18 +346,38 @@ struct Wizard {
 
     // MARK: - Helpers
 
-    private func ask(_ prompt: String) -> String {
-        print("  \(prompt)", terminator: "")
-        return readLine() ?? ""
+    /// Numbered prompt — increments the step counter once, then re-prompts
+    /// without incrementing on validation retries.
+    private mutating func ask(_ prompt: String) -> String {
+        step += 1
+        print("  \(step). \(prompt)", terminator: "")
+        guard let line = readLine() else { exit(0) }
+        return line
     }
 
-    private func askYesNo(_ prompt: String, default defaultValue: Bool) -> Bool {
+    /// Re-prompt under the same step number after a validation error.
+    private mutating func reask(_ prompt: String) -> String {
+        print("  \(step). \(prompt)", terminator: "")
+        guard let line = readLine() else { exit(0) }
+        return line
+    }
+
+    /// Numbered yes/no prompt — increments the step counter.
+    private mutating func askYesNo(_ prompt: String, default defaultValue: Bool) -> Bool {
         let hint = defaultValue ? "[Y/n]" : "[y/N]"
         let input = ask("\(prompt) \(hint): ")
         let trimmed = input.trimmingCharacters(in: .whitespaces).lowercased()
 
         if trimmed.isEmpty { return defaultValue }
         return trimmed == "y" || trimmed == "yes"
+    }
+
+    /// Un-numbered sub-prompt for follow-up inputs within the same step
+    /// (deployment targets per platform, tab name/symbol, entity name).
+    private func askSub(_ prompt: String) -> String {
+        print("     \(prompt)", terminator: "")
+        guard let line = readLine() else { exit(0) }
+        return line
     }
 
     private func printError(_ message: String) {
