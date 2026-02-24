@@ -157,7 +157,7 @@ struct XcodeGenRunner {
         packages:
           NavigationKit:
             url: \(config.navigationKitURL)
-            from: "1.0.0"
+            from: "1.1.1"
         """
     }
 

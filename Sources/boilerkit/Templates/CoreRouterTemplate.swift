@@ -27,7 +27,7 @@ enum CoreRouterTemplate {
             }
 
             func dismissAlert() {
-                router.dismissAlet()
+                router.dismissAlert()
             }
         }
         """
