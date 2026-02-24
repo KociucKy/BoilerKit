@@ -166,6 +166,7 @@ struct Wizard {
         return (true, entityName)
     }
 
+    // MARK: - Localization
 
     private mutating func askLocalization() -> (Bool, [String]) {
         let useLocalization = askYesNo("Add localizations?", default: false)
