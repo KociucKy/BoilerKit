@@ -68,10 +68,32 @@ struct XcodeGenRunner {
               - path: \(config.appName)/Assets.xcassets
             dependencies:
               - package: NavigationKit
+            info:
+              path: \(config.appName)/Info.plist
+              properties:
+                CFBundleDisplayName: \(config.appName)
+                CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+                CFBundleShortVersionString: "$(MARKETING_VERSION)"
+                UILaunchScreen: {}
+                UISupportedInterfaceOrientations:
+                  - UIInterfaceOrientationPortrait
+                  - UIInterfaceOrientationPortraitUpsideDown
+                  - UIInterfaceOrientationLandscapeLeft
+                  - UIInterfaceOrientationLandscapeRight
+                UISupportedInterfaceOrientations~ipad:
+                  - UIInterfaceOrientationPortrait
+                  - UIInterfaceOrientationPortraitUpsideDown
+                  - UIInterfaceOrientationLandscapeLeft
+                  - UIInterfaceOrientationLandscapeRight
             settings:
               base:
                 PRODUCT_BUNDLE_IDENTIFIER: \(config.bundleID)
                 SWIFT_VERSION: \(config.swiftVersion)
+                MARKETING_VERSION: "1.0"
+                CURRENT_PROJECT_VERSION: "1"
+                ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: YES
+                ENABLE_USER_SCRIPT_SANDBOXING: YES
+                SWIFT_EMIT_LOC_STRINGS: YES
         \(signingSettingsYML())
             scheme:
               testTargets:
