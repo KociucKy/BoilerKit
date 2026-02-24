@@ -5,7 +5,7 @@ INSTALL_PATH = /usr/local/bin/$(BINARY_NAME)
 
 install:
 	swift build -c release
-	cp .build/release/$(BINARY_NAME) $(INSTALL_PATH)
+	sudo cp .build/release/$(BINARY_NAME) $(INSTALL_PATH)
 	@echo "Installed $(BINARY_NAME) to $(INSTALL_PATH)"
 
 uninstall:
