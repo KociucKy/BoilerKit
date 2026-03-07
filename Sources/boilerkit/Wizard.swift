@@ -24,6 +24,7 @@ struct Wizard {
         let (useSwiftData, entityName) = askSwiftData()
         let (useLocalization, localizationLanguages) = askLocalization()
         let tabs = askTabs()
+        let packages = askPackages(stored: storedConfig.defaultPackages)
         let outputDirectory = askOutputDirectory(stored: storedConfig.defaultOutputDirectory)
 
         let config = ProjectConfig(
@@ -36,7 +37,7 @@ struct Wizard {
             swiftDataEntityName: entityName,
             tabs: tabs,
             teamID: teamID,
-            navigationKitURL: "https://github.com/KociucKy/NavigationKit",
+            packages: packages,
             outputDirectory: outputDirectory,
             useLocalization: useLocalization,
             localizationLanguages: localizationLanguages
@@ -269,6 +270,76 @@ struct Wizard {
         return trimmed.isEmpty ? defaultValue : trimmed
     }
 
+    // MARK: - Packages
+
+    private static let navigationKit = SwiftPackage(
+        name: "NavigationKit",
+        url: "https://github.com/KociucKy/NavigationKit"
+    )
+
+    private mutating func askPackages(stored: [SwiftPackage]) -> [SwiftPackage] {
+        // Build the display list: NavigationKit is always first and pinned selected.
+        // Saved packages follow, all pre-selected.
+        let savedPackages = stored.filter { $0.name != Self.navigationKit.name }
+        let displayList = savedPackages  // NavigationKit shown separately as pinned
+        var selected = Array(repeating: true, count: displayList.count)
+
+        if displayList.isEmpty {
+            // No saved packages — just show NavigationKit as pinned and skip selection UI
+            print("")
+            print("  [x] NavigationKit (always included)")
+        } else {
+            print("")
+            print("  Packages ([x] = included):")
+            print("     [x] NavigationKit  (always included)")
+
+            while true {
+                for (i, pkg) in displayList.enumerated() {
+                    let mark = selected[i] ? "x" : " "
+                    let index = String(format: "%2d", i + 1)
+                    print("     [\(mark)] \(index). \(pkg.name)  \(pkg.url)")
+                }
+                print("")
+                let input = askSub("Toggle numbers to deselect (e.g. 1 2), or press Enter to confirm: ")
+                let trimmed = input.trimmingCharacters(in: .whitespaces)
+                guard !trimmed.isEmpty else { break }
+
+                let indices = trimmed.split(separator: " ").compactMap { Int($0) }
+                for idx in indices {
+                    guard idx >= 1, idx <= displayList.count else {
+                        printWarning("Ignoring unknown package number: \(idx)")
+                        continue
+                    }
+                    selected[idx - 1].toggle()
+                }
+                print("")
+            }
+        }
+
+        var packages: [SwiftPackage] = [Self.navigationKit]
+        for (i, pkg) in displayList.enumerated() where selected[i] {
+            packages.append(pkg)
+        }
+
+        // Allow adding extra packages for this run
+        print("")
+        print("  Add more packages? Enter \"Name https://url\" or press Enter to skip.")
+        while true {
+            let input = askSub("  Package (or Enter to finish): ")
+            let trimmed = input.trimmingCharacters(in: .whitespaces)
+            guard !trimmed.isEmpty else { break }
+
+            let parts = trimmed.split(separator: " ", maxSplits: 1).map(String.init)
+            guard parts.count == 2 else {
+                printError("Format must be: Name https://url")
+                continue
+            }
+            packages.append(SwiftPackage(name: parts[0], url: parts[1]))
+        }
+
+        return packages
+    }
+
     // MARK: - Team ID
 
     private mutating func askTeamID(stored: String?) -> String? {
@@ -334,6 +405,8 @@ struct Wizard {
 
         print("  Build configs:   Mock, Dev, Prod")
         print("  Team ID:         \(config.teamID ?? "none")")
+        let packageNames = config.packages.map(\.name).joined(separator: ", ")
+        print("  Packages:        \(packageNames)")
         print("  Output:          \(config.outputDirectory)")
         print("  ──────────────────────────────────────")
         print("")
@@ -367,12 +440,24 @@ struct Wizard {
         let shouldOfferOutput = stored.defaultOutputDirectory == nil
         let shouldOfferTeamID = stored.defaultTeamID == nil && config.teamID != nil
 
-        guard shouldOfferOutput || shouldOfferTeamID else { return }
+        // New packages: those in config but not already in stored defaults
+        // (exclude NavigationKit since it's always pinned, not user-added)
+        let storedPackageNames = Set(stored.defaultPackages.map(\.name))
+        let newPackages = config.packages.filter {
+            $0.name != Wizard.navigationKit.name && !storedPackageNames.contains($0.name)
+        }
+        let shouldOfferPackages = !newPackages.isEmpty
+
+        guard shouldOfferOutput || shouldOfferTeamID || shouldOfferPackages else { return }
 
         var parts: [String] = []
         if shouldOfferOutput { parts.append("output directory") }
         if shouldOfferTeamID { parts.append("Team ID") }
-        let label = parts.joined(separator: " and ")
+        if shouldOfferPackages {
+            let names = newPackages.map(\.name).joined(separator: ", ")
+            parts.append("packages (\(names))")
+        }
+        let label = parts.joined(separator: ", ")
 
         let save = askYesNo("Save \(label) as defaults for future projects?", default: true)
         guard save else { return }
@@ -383,6 +468,9 @@ struct Wizard {
             }
             if shouldOfferTeamID {
                 c.defaultTeamID = config.teamID
+            }
+            if shouldOfferPackages {
+                c.defaultPackages.append(contentsOf: newPackages)
             }
         }
 

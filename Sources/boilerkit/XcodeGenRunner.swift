@@ -67,7 +67,7 @@ struct XcodeGenRunner {
             resources:
               - path: \(config.appName)/Assets.xcassets
             dependencies:
-              - package: NavigationKit
+        \(packageDependenciesYML())
             info:
               path: \(config.appName)/Info.plist
               properties:
@@ -154,12 +154,16 @@ struct XcodeGenRunner {
     }
 
     private func packagesYML() -> String {
-        """
-        packages:
-          NavigationKit:
-            url: \(config.navigationKitURL)
-            from: "1.1.1"
-        """
+        let entries = config.packages.map { pkg in
+            "  \(pkg.name):\n    url: \(pkg.url)\n    from: \"1.1.1\""
+        }.joined(separator: "\n")
+        return "packages:\n\(entries)"
+    }
+
+    private func packageDependenciesYML() -> String {
+        config.packages.map { pkg in
+            "          - package: \(pkg.name)"
+        }.joined(separator: "\n")
     }
 
     private func localizationSettingsYML() -> String {

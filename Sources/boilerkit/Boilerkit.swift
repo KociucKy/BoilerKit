@@ -100,6 +100,12 @@ extension Boilerkit {
         @Option(name: .long, help: "Set the default Apple Team ID.")
         var teamId: String?
 
+        @Option(name: .long, help: "Add a default package (format: \"Name=https://url\").")
+        var addPackage: [String] = []
+
+        @Option(name: .long, help: "Remove a default package by name.")
+        var removePackage: [String] = []
+
         @Flag(name: .long, help: "Clear the default output directory.")
         var clearOutput: Bool = false
 
@@ -110,6 +116,7 @@ extension Boilerkit {
 
         func run() throws {
             let hasChanges = output != nil || teamId != nil || clearOutput || clearTeamId
+                || !addPackage.isEmpty || !removePackage.isEmpty
 
             if hasChanges {
                 ConfigStore.update { config in
@@ -130,6 +137,38 @@ extension Boilerkit {
                         config.defaultTeamID = nil
                         print("  ✅ Default Team ID cleared.")
                     }
+                    for raw in addPackage {
+                        guard let eqRange = raw.firstIndex(of: "=") else {
+                            print("  ⚠️  Skipping '\(raw)' — format must be Name=https://url")
+                            continue
+                        }
+                        let name = String(raw[raw.startIndex..<eqRange])
+                        let url = String(raw[raw.index(after: eqRange)...])
+                        guard !name.isEmpty, !url.isEmpty else {
+                            print("  ⚠️  Skipping '\(raw)' — name and URL must not be empty")
+                            continue
+                        }
+                        if let existing = config.defaultPackages.firstIndex(where: {
+                            $0.name.lowercased() == name.lowercased()
+                        }) {
+                            config.defaultPackages[existing].url = url
+                            print("  ✅ Updated package '\(name)' to: \(url)")
+                        } else {
+                            config.defaultPackages.append(SwiftPackage(name: name, url: url))
+                            print("  ✅ Added default package '\(name)': \(url)")
+                        }
+                    }
+                    for name in removePackage {
+                        let before = config.defaultPackages.count
+                        config.defaultPackages.removeAll {
+                            $0.name.lowercased() == name.lowercased()
+                        }
+                        if config.defaultPackages.count < before {
+                            print("  ✅ Removed default package '\(name)'.")
+                        } else {
+                            print("  ⚠️  No default package named '\(name)' found.")
+                        }
+                    }
                 }
             }
 
@@ -146,6 +185,14 @@ extension Boilerkit {
             print("  ──────────────────────────────────────")
             print("  Default output dir:  \(config.defaultOutputDirectory ?? "(not set)")")
             print("  Default Team ID:     \(config.defaultTeamID ?? "(not set)")")
+            if config.defaultPackages.isEmpty {
+                print("  Default packages:    (none saved)")
+            } else {
+                print("  Default packages:")
+                for pkg in config.defaultPackages {
+                    print("    - \(pkg.name)  \(pkg.url)")
+                }
+            }
             print("  ──────────────────────────────────────")
             print("")
         }

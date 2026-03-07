@@ -54,7 +54,7 @@ struct ProjectConfig {
     let swiftDataEntityName: String?
     let tabs: [Tab]
     let teamID: String?
-    let navigationKitURL: String
+    let packages: [SwiftPackage]
     let outputDirectory: String
     let useLocalization: Bool
     let localizationLanguages: [String]
