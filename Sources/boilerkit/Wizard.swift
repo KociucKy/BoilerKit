@@ -24,7 +24,6 @@ struct Wizard {
         let (useSwiftData, entityName) = askSwiftData()
         let (useLocalization, localizationLanguages) = askLocalization()
         let tabs = askTabs()
-        let navigationKitURL = askNavigationKitURL()
         let outputDirectory = askOutputDirectory(stored: storedConfig.defaultOutputDirectory)
 
         let config = ProjectConfig(
@@ -37,7 +36,7 @@ struct Wizard {
             swiftDataEntityName: entityName,
             tabs: tabs,
             teamID: teamID,
-            navigationKitURL: navigationKitURL,
+            navigationKitURL: "https://github.com/KociucKy/NavigationKit",
             outputDirectory: outputDirectory,
             useLocalization: useLocalization,
             localizationLanguages: localizationLanguages
@@ -283,15 +282,6 @@ struct Wizard {
         return trimmed.isEmpty ? nil : trimmed
     }
 
-    // MARK: - NavigationKit URL
-
-    private mutating func askNavigationKitURL() -> String {
-        let defaultValue = "https://github.com/KociucKy/NavigationKit"
-        let input = ask("NavigationKit SPM URL [\(defaultValue)]: ")
-        let trimmed = input.trimmingCharacters(in: .whitespaces)
-        return trimmed.isEmpty ? defaultValue : trimmed
-    }
-
     // MARK: - Output Directory
 
     private mutating func askOutputDirectory(stored: String?) -> String {
@@ -344,7 +334,6 @@ struct Wizard {
 
         print("  Build configs:   Mock, Dev, Prod")
         print("  Team ID:         \(config.teamID ?? "none")")
-        print("  NavigationKit:   \(config.navigationKitURL)")
         print("  Output:          \(config.outputDirectory)")
         print("  ──────────────────────────────────────")
         print("")
