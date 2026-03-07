@@ -30,6 +30,18 @@ enum CoreBuilderTemplate {
             """
         }.joined(separator: "\n\n")
 
+        let devSettingsMethod = config.useDevSettings ? """
+
+                func devSettingsView(router: Router) -> some View {
+                    DevSettingsView(
+                        presenter: DevSettingsPresenter(
+                            interactor: interactor,
+                            router: CoreRouter(router: router, builder: self)
+                        )
+                    )
+                }
+            """ : ""
+
         return """
         import SwiftUI
         import NavigationKit
@@ -63,7 +75,7 @@ enum CoreBuilderTemplate {
 
             // MARK: - Tab Views
 
-        \(tabBuilderMethods)
+        \(tabBuilderMethods)\(devSettingsMethod)
         }
         """
     }

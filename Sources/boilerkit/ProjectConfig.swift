@@ -60,6 +60,7 @@ struct ProjectConfig {
     let localizationLanguages: [String]
     let useLinting: Bool
     let useFormatting: Bool
+    let useDevSettings: Bool
 
     // MARK: - Computed
 

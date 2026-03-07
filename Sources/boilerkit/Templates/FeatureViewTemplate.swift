@@ -1,9 +1,35 @@
 // MARK: - FeatureViewTemplate
 
 enum FeatureViewTemplate {
-    static func render(tab: Tab) -> String {
+    static func render(tab: Tab, isFirst: Bool, useDevSettings: Bool) -> String {
         let feature = tab.sanitizedName
         let featureLower = feature.lowercased()
+        let devSettingsRouterMethod = useDevSettings && isFirst
+            ? "\n            func presentDevSettings()"
+            : ""
+        let devSettingsPresenterMethod = useDevSettings && isFirst ? """
+
+
+                    // MARK: - Dev Settings
+
+                    func showDevSettings() {
+                        router.presentDevSettings()
+                    }
+            """ : ""
+        let devSettingsToolbar = useDevSettings && isFirst ? """
+
+                    #if DEBUG
+                    .toolbar {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button {
+                                presenter.showDevSettings()
+                            } label: {
+                                Image(systemName: "hammer.fill")
+                            }
+                        }
+                    }
+                    #endif
+            """ : ""
 
         return """
         import SwiftUI
@@ -22,7 +48,7 @@ enum FeatureViewTemplate {
 
         @MainActor
         protocol \(feature)Router {
-            func dismissScreen()
+            func dismissScreen()\(devSettingsRouterMethod)
         }
 
         extension CoreRouter: \(feature)Router {}
@@ -43,7 +69,7 @@ enum FeatureViewTemplate {
             init(interactor: any \(feature)Interactor, router: any \(feature)Router) {
                 self.interactor = interactor
                 self.router = router
-            }
+            }\(devSettingsPresenterMethod)
         }
 
         // MARK: - \(feature)View
@@ -58,7 +84,7 @@ enum FeatureViewTemplate {
 
             var body: some View {
                 Text("\(feature)")
-                    .navigationTitle("\(feature)")
+                    .navigationTitle("\(feature)")\(devSettingsToolbar)
             }
         }
 

@@ -36,6 +36,10 @@ struct FileGenerator {
 			try writeLocalizationFiles(root: root)
 		}
 
+		if config.useDevSettings {
+			try writeDevSettingsFiles(root: root)
+		}
+
 		try writeAssets(root: root)
 		try writeTestFiles(root: root)
 
@@ -72,7 +76,11 @@ struct FileGenerator {
 			"\(root)/\(config.appName)/Core/\($0.sanitizedName)"
 		}
 
-		for dir in dirs + tabDirs {
+		let devSettingsDirs = config.useDevSettings
+			? ["\(root)/\(config.appName)/Core/DevSettings"]
+			: []
+
+		for dir in dirs + tabDirs + devSettingsDirs {
 			try fileManager.createDirectory(atPath: dir, withIntermediateDirectories: true)
 		}
 	}
@@ -137,10 +145,14 @@ struct FileGenerator {
 	// MARK: - Feature Files (one per tab)
 
 	private func writeFeatureFiles(root: String) throws {
-		for tab in config.tabs {
+		for (index, tab) in config.tabs.enumerated() {
 			let featureDir = "\(root)/\(config.appName)/Core/\(tab.sanitizedName)"
 			try write(
-				FeatureViewTemplate.render(tab: tab),
+				FeatureViewTemplate.render(
+					tab: tab,
+					isFirst: index == 0,
+					useDevSettings: config.useDevSettings
+				),
 				to: "\(featureDir)/\(tab.sanitizedName)View.swift"
 			)
 		}
@@ -183,6 +195,16 @@ struct FileGenerator {
 		try write(
 			SwiftDataTemplates.renderManager(entityName: entityName),
 			to: "\(servicesDir)/\(entityName)Manager.swift"
+		)
+	}
+
+	// MARK: - DevSettings Files
+
+	private func writeDevSettingsFiles(root: String) throws {
+		let devSettingsDir = "\(root)/\(config.appName)/Core/DevSettings"
+		try write(
+			DevSettingsTemplate.render(appName: config.appName),
+			to: "\(devSettingsDir)/DevSettingsView.swift"
 		)
 	}
 

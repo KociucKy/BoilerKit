@@ -2,6 +2,19 @@
 
 enum CoreRouterTemplate {
     static func render(config: ProjectConfig) -> String {
+        let devSettingsMethods = config.useDevSettings ? """
+
+                func presentDevSettings() {
+                    router.showScreen(.sheet) { router in
+                        builder.devSettingsView(router: router)
+                    }
+                }
+
+                func dismissDevSettings() {
+                    router.dismissScreen()
+                }
+            """ : ""
+
         return """
         import SwiftUI
         import NavigationKit
@@ -36,7 +49,7 @@ enum CoreRouterTemplate {
 
             func dismissAlert() {
                 router.dismissAlert()
-            }
+            }\(devSettingsMethods)
         }
         """
     }
