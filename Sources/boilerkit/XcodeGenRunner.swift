@@ -105,7 +105,7 @@ struct XcodeGenRunner {
                 Release:
                   PRODUCT_BUNDLE_IDENTIFIER: \(config.bundleID)
                   INFOPLIST_KEY_CFBundleDisplayName: "\(config.appName)"
-
+        \(preBuildScriptsYML())
           \(config.appName)Tests:
             type: bundle.unit-test
             platform: \(platformsYML())
@@ -164,6 +164,39 @@ struct XcodeGenRunner {
         config.packages.map { pkg in
             "          - package: \(pkg.name)"
         }.joined(separator: "\n")
+    }
+
+    private func preBuildScriptsYML() -> String {
+        var entries: [String] = []
+
+        if config.useLinting {
+            entries.append("""
+                      - name: SwiftLint
+                        script: |
+                          if which swiftlint > /dev/null; then
+                            swiftlint
+                          else
+                            echo "warning: SwiftLint not installed, download from https://github.com/realm/SwiftLint"
+                          fi
+                        basedOnDependencyAnalysis: false
+            """)
+        }
+
+        if config.useFormatting {
+            entries.append("""
+                      - name: SwiftFormat
+                        script: |
+                          if which swiftformat > /dev/null; then
+                            swiftformat .
+                          else
+                            echo "warning: SwiftFormat not installed, download from https://github.com/nicklockwood/SwiftFormat"
+                          fi
+                        basedOnDependencyAnalysis: false
+            """)
+        }
+
+        guard !entries.isEmpty else { return "" }
+        return "            preBuildScripts:\n" + entries.joined(separator: "\n")
     }
 
     private func localizationSettingsYML() -> String {

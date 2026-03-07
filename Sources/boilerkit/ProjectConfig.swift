@@ -58,6 +58,8 @@ struct ProjectConfig {
     let outputDirectory: String
     let useLocalization: Bool
     let localizationLanguages: [String]
+    let useLinting: Bool
+    let useFormatting: Bool
 
     // MARK: - Computed
 

@@ -39,6 +39,14 @@ struct FileGenerator {
 		try writeAssets(root: root)
 		try writeTestFiles(root: root)
 
+		if config.useLinting {
+			try writeLintingConfig(root: root)
+		}
+
+		if config.useFormatting {
+			try writeFormattingConfig(root: root)
+		}
+
 		print("  ✅ Source files written")
 	}
 
@@ -274,6 +282,37 @@ struct FileGenerator {
 			TestTagsTemplate.render(config: config),
 			to: "\(testsDir)/Tags.swift"
 		)
+	}
+
+	// MARK: - SwiftLint Config
+
+	private func writeLintingConfig(root: String) throws {
+		let content = """
+		excluded:
+		  - .build
+		  - Packages
+
+		opt_in_rules:
+		  - empty_count
+		  - closure_spacing
+		  - force_unwrapping
+
+		analyzer_rules:
+		  - unused_import
+		"""
+		try write(content, to: "\(root)/.swiftlint.yml")
+	}
+
+	// MARK: - SwiftFormat Config
+
+	private func writeFormattingConfig(root: String) throws {
+		let content = """
+		--swiftversion \(config.swiftVersion)
+		--indent 4
+		--importgrouping testable-bottom
+		--wrapcollections before-first
+		"""
+		try write(content, to: "\(root)/.swiftformat")
 	}
 
 	// MARK: - Write Helper

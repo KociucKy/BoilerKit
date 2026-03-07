@@ -19,6 +19,7 @@ struct Wizard {
         let swiftVersion = askSwiftVersion()
         let (useSwiftData, entityName) = askSwiftData()
         let (useLocalization, localizationLanguages) = askLocalization()
+        let (useLinting, useFormatting) = askCodeQualityTools()
         let tabs = askTabs()
         let packages = askPackages(stored: storedConfig.defaultPackages)
         let outputDirectory = askOutputDirectory(stored: storedConfig.defaultOutputDirectory)
@@ -36,7 +37,9 @@ struct Wizard {
             packages: packages,
             outputDirectory: outputDirectory,
             useLocalization: useLocalization,
-            localizationLanguages: localizationLanguages
+            localizationLanguages: localizationLanguages,
+            useLinting: useLinting,
+            useFormatting: useFormatting
         )
 
         printSummary(config)
@@ -207,6 +210,45 @@ struct Wizard {
         let languages = selected.filter { seen.insert($0).inserted }
 
         return (true, languages)
+    }
+
+    // MARK: - Code Quality Tools
+
+    private mutating func askCodeQualityTools() -> (useLinting: Bool, useFormatting: Bool) {
+        let tools = [
+            (name: "SwiftLint", description: "linting"),
+            (name: "SwiftFormat", description: "formatting"),
+        ]
+
+        // SwiftLint on by default, SwiftFormat off
+        var selected = [true, false]
+
+        print("")
+        print("  Code quality tools ([x] = included):")
+
+        while true {
+            for (i, tool) in tools.enumerated() {
+                let mark = selected[i] ? "x" : " "
+                let index = String(format: "%2d", i + 1)
+                print("     [\(mark)] \(index). \(tool.name)  (\(tool.description))")
+            }
+            print("")
+            let input = askSub("Toggle numbers to change (e.g. 1 2), or press Enter to confirm: ")
+            let trimmed = input.trimmingCharacters(in: .whitespaces)
+            guard !trimmed.isEmpty else { break }
+
+            let indices = trimmed.split(separator: " ").compactMap { Int($0) }
+            for idx in indices {
+                guard idx >= 1, idx <= tools.count else {
+                    printWarning("Ignoring unknown tool number: \(idx)")
+                    continue
+                }
+                selected[idx - 1].toggle()
+            }
+            print("")
+        }
+
+        return (useLinting: selected[0], useFormatting: selected[1])
     }
 
     // MARK: - Tabs
@@ -393,6 +435,9 @@ struct Wizard {
         } else {
             print("  Localization:    none")
         }
+
+        print("  SwiftLint:       \(config.useLinting ? "yes" : "no")")
+        print("  SwiftFormat:     \(config.useFormatting ? "yes" : "no")")
 
         print("  Tabs:")
         for tab in config.tabs {
