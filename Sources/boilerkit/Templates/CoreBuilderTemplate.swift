@@ -2,20 +2,7 @@
 
 enum CoreBuilderTemplate {
     static func render(config: ProjectConfig) -> String {
-        let tabScreens = config.tabs.map { tab in
-            """
-                        TabBarScreen(
-                            title: "\(tab.sanitizedName)",
-                            systemImage: "\(tab.sfSymbol)",
-                            screen: {
-                                RouterView { router in
-                                    \(tab.sanitizedName.lowercased())View(router: router)
-                                }
-                                .any()
-                            }
-                        )
-            """
-        }.joined(separator: ",\n")
+        let isSingleTab = config.tabs.count == 1
 
         let tabBuilderMethods = config.tabs.map { tab in
             """
@@ -42,6 +29,48 @@ enum CoreBuilderTemplate {
                 }
             """ : ""
 
+        let buildBody: String
+        let tabBarSection: String
+
+        if isSingleTab, let tab = config.tabs.first {
+            buildBody = """
+                    RouterView { router in
+                            \(tab.sanitizedName.lowercased())View(router: router)
+                        }
+                        .any()
+            """
+            tabBarSection = ""
+        } else {
+            let tabScreens = config.tabs.map { tab in
+                """
+                            TabBarScreen(
+                                title: "\(tab.sanitizedName)",
+                                systemImage: "\(tab.sfSymbol)",
+                                screen: {
+                                    RouterView { router in
+                                        \(tab.sanitizedName.lowercased())View(router: router)
+                                    }
+                                    .any()
+                                }
+                            )
+                """
+            }.joined(separator: ",\n")
+
+            buildBody = "tabBarView().any()"
+            tabBarSection = """
+
+                    // MARK: - Tab Bar
+
+                    func tabBarView() -> some View {
+                        TabBarView(
+                            tabs: [
+            \(tabScreens)
+                            ]
+                        )
+                    }
+            """
+        }
+
         return """
         import SwiftUI
         import NavigationKit
@@ -60,18 +89,8 @@ enum CoreBuilderTemplate {
             // MARK: - Builder
 
             func build() -> AnyView {
-                tabBarView().any()
-            }
-
-            // MARK: - Tab Bar
-
-            func tabBarView() -> some View {
-                TabBarView(
-                    tabs: [
-        \(tabScreens)
-                    ]
-                )
-            }
+                \(buildBody)
+            }\(tabBarSection)
 
             // MARK: - Tab Views
 

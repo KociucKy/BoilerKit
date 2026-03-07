@@ -57,10 +57,9 @@ struct FileGenerator {
 	// MARK: - Directories
 
 	private func createDirectories(root: String) throws {
-		let dirs = [
+		var dirs = [
 			root,
 			"\(root)/\(config.appName)/Root/RIB",
-			"\(root)/\(config.appName)/Core/TabBar",
 			"\(root)/\(config.appName)/Components/Extensions",
 			"\(root)/\(config.appName)/Components/ViewModifiers",
 			"\(root)/\(config.appName)/Components/Views",
@@ -74,6 +73,10 @@ struct FileGenerator {
 
 		let tabDirs = config.tabs.map {
 			"\(root)/\(config.appName)/Core/\($0.sanitizedName)"
+		}
+
+		if config.tabs.count > 1 {
+			dirs.append("\(root)/\(config.appName)/Core/TabBar")
 		}
 
 		let devSettingsDirs = config.useDevSettings
@@ -134,6 +137,7 @@ struct FileGenerator {
 	// MARK: - TabBar Files
 
 	private func writeTabBarFiles(root: String) throws {
+		guard config.tabs.count > 1 else { return }
 		let tabBarDir = "\(root)/\(config.appName)/Core/TabBar"
 
 		try write(
