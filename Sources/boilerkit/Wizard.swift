@@ -4,10 +4,6 @@ import Foundation
 
 struct Wizard {
 
-    // MARK: - State
-
-    private var step = 0
-
     // MARK: - Run
 
     mutating func run() -> ProjectConfig {
@@ -480,23 +476,21 @@ struct Wizard {
 
     // MARK: - Helpers
 
-    /// Numbered prompt — increments the step counter once, then re-prompts
-    /// without incrementing on validation retries.
+    /// Finger-right prompt — used for each top-level wizard question.
     private mutating func ask(_ prompt: String) -> String {
-        step += 1
-        print("  \(step). \(prompt)", terminator: "")
+        print("  👉 \(prompt)", terminator: "")
         guard let line = readLine() else { exit(0) }
         return line
     }
 
-    /// Re-prompt under the same step number after a validation error.
+    /// Re-prompt after a validation error (same emoji, no side effects).
     private mutating func reask(_ prompt: String) -> String {
-        print("  \(step). \(prompt)", terminator: "")
+        print("  👉 \(prompt)", terminator: "")
         guard let line = readLine() else { exit(0) }
         return line
     }
 
-    /// Numbered yes/no prompt — increments the step counter.
+    /// Yes/no prompt — delegates to ask().
     private mutating func askYesNo(_ prompt: String, default defaultValue: Bool) -> Bool {
         let hint = defaultValue ? "[Y/n]" : "[y/N]"
         let input = ask("\(prompt) \(hint): ")
@@ -506,7 +500,7 @@ struct Wizard {
         return trimmed == "y" || trimmed == "yes"
     }
 
-    /// Un-numbered sub-prompt for follow-up inputs within the same step
+    /// Sub-prompt for follow-up inputs within the same question
     /// (deployment targets per platform, tab name/symbol, entity name).
     private func askSub(_ prompt: String) -> String {
         print("     \(prompt)", terminator: "")
