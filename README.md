@@ -1,6 +1,6 @@
 # boilerkit
 
-A Swift CLI tool that interactively scaffolds a production-ready Xcode project following a strict VIPER/RIBs architecture. Answer a few questions and get a fully-wired `.xcodeproj` — complete with build configurations, schemes, SwiftData persistence, localizations, and a tab-based navigation shell — ready to open and run.
+A Swift CLI tool that interactively scaffolds a production-ready Xcode project following a strict VIPER/RIBs architecture. Answer a few questions and get a fully-wired `.xcodeproj` — complete with build configurations, schemes, SwiftData persistence, localizations, an optional onboarding flow, and a tab-based navigation shell — ready to open and run.
 
 ## Requirements
 
@@ -52,7 +52,28 @@ Defaults are stored at `~/.boilerkit/config.json`. When a default is set, the wi
 
 ## The Wizard
 
-Running `boilerkit` starts an interactive prompt. Each question is numbered. Sub-prompts (deployment targets, tab details, language selection) are indented continuations of their parent step — they don't get their own number.
+Running `boilerkit` starts an interactive prompt. Questions are asked in a fixed order. Sub-prompts (deployment targets, tab details, language selection) are indented continuations of their parent step.
+
+### Wizard questions
+
+| # | Question | Default |
+|---|---|---|
+| 1 | App name | _(required)_ |
+| 2 | Bundle ID | `com.yourcompany.<appname>` |
+| 3 | Apple Team ID | _(skipped if stored)_ |
+| 4 | Target platforms | iOS only |
+| 5 | Deployment targets | per-platform OS minimum |
+| 6 | Swift version | `6.0` |
+| 7 | SwiftData | yes |
+| 8 | Localizations | no |
+| 9 | Code quality tools | SwiftLint on, SwiftFormat off |
+| 10 | Tabs | _(required, 1–6)_ |
+| 11 | DevSettings | no |
+| 12 | Onboarding | no |
+| 13 | Packages | NavigationKit (always included) |
+| 14 | Output directory | _(skipped if stored)_ |
+
+Run `boilerkit generate --help` for a full description of every question.
 
 ### Full example session
 
@@ -61,51 +82,50 @@ Running `boilerkit` starts an interactive prompt. Each question is numbered. Sub
   iOS app project generator
   ──────────────────────────────────────
 
-  1. App name (e.g. MyApp, no spaces): MyApp
-  2. Bundle ID [com.yourcompany.myapp]: com.acme.myapp
+  👉 App name (e.g. MyApp, no spaces): MyApp
+  👉 Bundle ID [com.yourcompany.myapp]: com.acme.myapp
   Team ID: ABCD1234 (default — run 'boilerkit config' to change)
-  3. Target platforms (iOS is always included):
-       1. macOS
-       2. watchOS
-       3. tvOS
-       4. visionOS
+  Target platforms (iOS is always included):
+    1. macOS
+    2. watchOS
+    3. tvOS
+    4. visionOS
 
-     Add platforms? Enter numbers separated by spaces, or press Enter to skip:
-  3. Deployment targets (press Enter to accept defaults):
+  👉 Add platforms? Enter numbers separated by spaces, or press Enter to skip:
+  Deployment targets (press Enter to accept defaults):
      iOS [18.0]:
-  4. Swift version [6.0]:
-  5. Use SwiftData for persistence? [Y/n]: y
+  👉 Swift version [6.0]:
+  👉 Use SwiftData for persistence? [Y/n]: y
      First entity name (e.g. Item), or press Enter to skip: Task
-  6. Add localizations? [y/N]: y
+  👉 Add localizations? [y/N]: y
 
-     Available languages (English is always included):
-      1. Polish (pl)
-      2. German (de)
-      3. French (fr)
-      4. Spanish (es)
-      5. Italian (it)
-      6. Portuguese (pt)
-      7. Japanese (ja)
-      8. Chinese Simplified (zh-Hans)
-      9. Chinese Traditional (zh-Hant)
-     10. Arabic (ar)
-     11. Russian (ru)
-     12. Korean (ko)
+  Available languages (English is always included):
+    1. Polish (pl)
+    2. German (de)
+    ...
 
      Enter numbers separated by spaces, or press Enter to skip: 1 2
-  7. Number of tabs (1–6): 3
 
-     Configure each tab (name + SF Symbol):
-     Tab 1:
-        Name (e.g. Home): Home
-        SF Symbol [circle]: house
-     Tab 2:
-        Name (e.g. Home): Tasks
-        SF Symbol [circle]: checklist
-     Tab 3:
-        Name (e.g. Home): Settings
-        SF Symbol [circle]: gearshape
-  8. NavigationKit SPM URL [https://github.com/KociucKy/NavigationKit]:
+  Code quality tools ([x] = included):
+     [x]  1. SwiftLint  (linting)
+     [ ]  2. SwiftFormat  (formatting)
+
+     Toggle numbers to change (e.g. 1 2), or press Enter to confirm:
+  👉 Number of tabs (1–6): 3
+
+  Configure each tab (name + SF Symbol):
+  Tab 1:
+      Name (e.g. Home): Home
+      SF Symbol [circle]: house
+  Tab 2:
+      Name (e.g. Home): Tasks
+      SF Symbol [circle]: checklist
+  Tab 3:
+      Name (e.g. Home): Settings
+      SF Symbol [circle]: gearshape
+  👉 Add DevSettingsView (accessible from first tab toolbar in DEBUG builds)? [y/N]: n
+  👉 Add onboarding flow (WelcomeView → OnboardingCompletedView)? [y/N]: y
+  [x] NavigationKit (always included)
   Output: ~/Developer (default — run 'boilerkit config' to change)
 
   ──────────────────────────────────────
@@ -119,17 +139,21 @@ Running `boilerkit` starts an interactive prompt. Each question is numbered. Sub
   SwiftData:       yes
   First entity:    Task
   Localization:    en, pl, de
+  SwiftLint:       yes
+  SwiftFormat:     no
+  DevSettings:     no
+  Onboarding:      yes
   Tabs:
     - Home (house)
     - Tasks (checklist)
     - Settings (gearshape)
   Build configs:   Mock, Dev, Prod
   Team ID:         ABCD1234
-  NavigationKit:   https://github.com/KociucKy/NavigationKit
+  Packages:        NavigationKit
   Output:          /Users/you/Developer
   ──────────────────────────────────────
 
-  9. Generate project? [Y/n]: y
+  👉 Generate project? [Y/n]: y
 
   🔨 Generating source files...
   ✅ Source files written
@@ -146,17 +170,21 @@ Running `boilerkit` starts an interactive prompt. Each question is numbered. Sub
 
 ## Generated project structure
 
+The tree below shows a project named `MyApp` with 3 tabs, SwiftData (`Task` entity), localizations, and onboarding enabled. Optional sections are noted.
+
 ```
 MyApp/
 ├── project.yml                         ← XcodeGen spec (can be re-run manually)
 ├── MyApp/
 │   ├── Root/
 │   │   ├── MyAppApp.swift              ← @main entry point
-│   │   ├── AppDelegate.swift           ← UIApplicationDelegate, wires Dependencies + CoreBuilder
+│   │   ├── AppDelegate.swift           ← UIApplicationDelegate, wires builders
 │   │   ├── Dependencies.swift          ← build-config branching, DevPreview
 │   │   ├── DependencyContainer.swift   ← @Observable service locator
-│   │   ├── Localizable.xcstrings       ← String Catalog (if localizations enabled)
-│   │   ├── en.lproj/                   ← language region markers (one per language)
+│   │   ├── AppState.swift              ← (onboarding) @Observable showOnboarding flag
+│   │   ├── AppViewBuilder.swift        ← (onboarding) animated main/onboarding switcher
+│   │   ├── Localizable.xcstrings       ← (localization) String Catalog
+│   │   ├── en.lproj/                   ← (localization) language region markers
 │   │   ├── pl.lproj/
 │   │   └── RIB/
 │   │       ├── Builder.swift           ← @MainActor protocol Builder
@@ -164,6 +192,16 @@ MyApp/
 │   │       ├── CoreInteractor.swift    ← root interactor
 │   │       └── CoreRouter.swift        ← root router wrapping NavigationKit.Router
 │   ├── Core/
+│   │   ├── Onboarding/                 ← (onboarding)
+│   │   │   ├── OnboardingBuilder.swift
+│   │   │   ├── OnboardingInteractor.swift
+│   │   │   ├── OnboardingRouter.swift
+│   │   │   ├── Welcome/
+│   │   │   │   ├── WelcomeView.swift
+│   │   │   │   └── WelcomePresenter.swift
+│   │   │   └── Completed/
+│   │   │       ├── OnboardingCompletedView.swift
+│   │   │       └── OnboardingCompletedPresenter.swift
 │   │   ├── TabBar/
 │   │   │   └── TabBarView.swift        ← data-driven TabView
 │   │   ├── Home/
@@ -178,12 +216,12 @@ MyApp/
 │   │   └── Views/
 │   ├── Models/
 │   │   ├── Domain/
-│   │   │   └── Task.swift              ← plain struct (if SwiftData enabled)
+│   │   │   └── Task.swift              ← (SwiftData) plain struct, Identifiable + Equatable
 │   │   ├── Entities/
-│   │   │   └── TaskEntity.swift        ← @Model class
+│   │   │   └── TaskEntity.swift        ← (SwiftData) @Model class
 │   │   └── Services/
 │   │       ├── TaskMapper.swift
-│   │       ├── TaskRepository.swift    ← protocol + Mock + SwiftData implementations
+│   │       ├── TaskRepository.swift    ← (SwiftData) protocol + Mock + SwiftData implementations
 │   │       └── TaskManager.swift
 │   └── Assets.xcassets/
 ├── MyAppTests/
@@ -321,6 +359,41 @@ container.register(TaskManager(repository: MockTaskRepository()))
 // Dev / Prod
 let modelContainer = try ModelContainer(for: TaskEntity.self)
 container.register(TaskManager(repository: SwiftDataTaskRepository(container: modelContainer)))
+```
+
+---
+
+## Onboarding
+
+When onboarding is enabled, boilerkit generates a two-screen onboarding flow wired into the app's root navigation using the same RIBs pattern as the rest of the project.
+
+### How it works
+
+`AppState` holds a single `showOnboarding: Bool` flag that is persisted to `UserDefaults`. It defaults to `true` on the very first launch (key absent) and is set to `false` when the user taps **Finish** on the completion screen. From that point on, the app launches directly into the main tab bar.
+
+`AppViewBuilder` is a generic SwiftUI view that switches between the onboarding and main experiences with a smooth animated transition:
+
+```swift
+AppViewBuilder(
+    showOnboarding: delegate.appState.showOnboarding,
+    mainView: { delegate.builder.build() },
+    onboardingView: { delegate.onboardingBuilder.build() }
+)
+```
+
+### Generated screens
+
+| Screen | File | Description |
+|---|---|---|
+| Welcome | `Core/Onboarding/Welcome/WelcomeView.swift` | Entry screen with a "Get started" button |
+| Completed | `Core/Onboarding/Completed/OnboardingCompletedView.swift` | Completion screen; "Finish" sets `showOnboarding = false` |
+
+### Re-showing onboarding
+
+To show onboarding again (e.g. after sign-out), call:
+
+```swift
+appState.updateViewState(showOnboarding: true)
 ```
 
 ---

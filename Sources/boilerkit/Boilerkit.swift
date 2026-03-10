@@ -26,7 +26,33 @@ extension Boilerkit {
 
         static let configuration = CommandConfiguration(
             commandName: "generate",
-            abstract: "Interactively generate a new iOS Xcode project."
+            abstract: "Interactively generate a new iOS Xcode project.",
+            discussion: """
+            Launches the interactive wizard. Answer each question and boilerkit writes
+            all source files, then runs xcodegen to produce a ready-to-open .xcodeproj.
+
+            Wizard questions (in order):
+              1.  App name            — PascalCase identifier, no spaces (e.g. MyApp)
+              2.  Bundle ID           — reverse-DNS, defaults to com.yourcompany.<appname>
+              3.  Apple Team ID       — skipped if a default is stored
+              4.  Target platforms    — iOS always included; optionally add macOS/watchOS/tvOS/visionOS
+              5.  Deployment targets  — per-platform minimum OS version
+              6.  Swift version       — defaults to 6.0
+              7.  SwiftData           — optional persistence stack + first entity name
+              8.  Localizations       — optional String Catalog + language selection
+              9.  Code quality tools  — SwiftLint (on by default) and SwiftFormat (off by default)
+              10. Tabs                — 1–6 tabs, each with a name and SF Symbol
+              11. DevSettings         — optional DEBUG-only settings panel wired to the first tab
+              12. Onboarding          — optional WelcomeView → OnboardingCompletedView flow
+              13. Packages            — NavigationKit always included; add or remove extras
+              14. Output directory    — skipped if a default is stored
+
+            After answering all questions, a summary is printed and you confirm before
+            any files are written.
+
+            Use 'boilerkit config' to pre-set output directory and Team ID so those
+            questions are skipped automatically.
+            """
         )
 
         // MARK: - Run
