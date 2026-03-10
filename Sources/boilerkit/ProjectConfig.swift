@@ -61,6 +61,7 @@ struct ProjectConfig {
     let useLinting: Bool
     let useFormatting: Bool
     let useDevSettings: Bool
+    let useOnboarding: Bool
 
     // MARK: - Computed
 

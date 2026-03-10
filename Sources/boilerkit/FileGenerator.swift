@@ -36,11 +36,15 @@ struct FileGenerator {
 			try writeLocalizationFiles(root: root)
 		}
 
-		if config.useDevSettings {
-			try writeDevSettingsFiles(root: root)
-		}
+        if config.useDevSettings {
+            try writeDevSettingsFiles(root: root)
+        }
 
-		try writeAssets(root: root)
+        if config.useOnboarding {
+            try writeOnboardingFiles(root: root)
+        }
+
+        try writeAssets(root: root)
 		try writeTestFiles(root: root)
 
 		if config.useLinting {
@@ -79,37 +83,56 @@ struct FileGenerator {
 			dirs.append("\(root)/\(config.appName)/Core/TabBar")
 		}
 
-		let devSettingsDirs = config.useDevSettings
-			? ["\(root)/\(config.appName)/Core/DevSettings"]
-			: []
+        let devSettingsDirs = config.useDevSettings
+            ? ["\(root)/\(config.appName)/Core/DevSettings"]
+            : []
 
-		for dir in dirs + tabDirs + devSettingsDirs {
+        let onboardingDirs = config.useOnboarding
+            ? [
+                "\(root)/\(config.appName)/Core/Onboarding",
+                "\(root)/\(config.appName)/Core/Onboarding/Welcome",
+                "\(root)/\(config.appName)/Core/Onboarding/Completed",
+            ]
+            : []
+
+        for dir in dirs + tabDirs + devSettingsDirs + onboardingDirs {
 			try fileManager.createDirectory(atPath: dir, withIntermediateDirectories: true)
 		}
 	}
 
 	// MARK: - Root Files
 
-	private func writeRootFiles(root: String) throws {
-		let appDir = "\(root)/\(config.appName)/Root"
+    private func writeRootFiles(root: String) throws {
+        let appDir = "\(root)/\(config.appName)/Root"
 
-		try write(
-			AppTemplate.render(config: config),
-			to: "\(appDir)/\(config.appName)App.swift"
-		)
-		try write(
-			AppDelegateTemplate.render(config: config),
-			to: "\(appDir)/AppDelegate.swift"
-		)
-		try write(
-			DependenciesTemplate.render(config: config),
-			to: "\(appDir)/Dependencies.swift"
-		)
-		try write(
-			DependencyContainerTemplate.render(),
-			to: "\(appDir)/DependencyContainer.swift"
-		)
-	}
+        try write(
+            AppTemplate.render(config: config),
+            to: "\(appDir)/\(config.appName)App.swift"
+        )
+        try write(
+            AppDelegateTemplate.render(config: config),
+            to: "\(appDir)/AppDelegate.swift"
+        )
+        try write(
+            DependenciesTemplate.render(config: config),
+            to: "\(appDir)/Dependencies.swift"
+        )
+        try write(
+            DependencyContainerTemplate.render(),
+            to: "\(appDir)/DependencyContainer.swift"
+        )
+
+        if config.useOnboarding {
+            try write(
+                AppStateTemplate.render(),
+                to: "\(appDir)/AppState.swift"
+            )
+            try write(
+                AppViewBuilderTemplate.render(),
+                to: "\(appDir)/AppViewBuilder.swift"
+            )
+        }
+    }
 
 	// MARK: - RIB Files
 
@@ -202,15 +225,52 @@ struct FileGenerator {
 		)
 	}
 
-	// MARK: - DevSettings Files
+    // MARK: - DevSettings Files
 
-	private func writeDevSettingsFiles(root: String) throws {
-		let devSettingsDir = "\(root)/\(config.appName)/Core/DevSettings"
-		try write(
-			DevSettingsTemplate.render(appName: config.appName),
-			to: "\(devSettingsDir)/DevSettingsView.swift"
-		)
-	}
+    private func writeDevSettingsFiles(root: String) throws {
+        let devSettingsDir = "\(root)/\(config.appName)/Core/DevSettings"
+        try write(
+            DevSettingsTemplate.render(appName: config.appName),
+            to: "\(devSettingsDir)/DevSettingsView.swift"
+        )
+    }
+
+    // MARK: - Onboarding Files
+
+    private func writeOnboardingFiles(root: String) throws {
+        let onboardingDir = "\(root)/\(config.appName)/Core/Onboarding"
+        let welcomeDir = "\(onboardingDir)/Welcome"
+        let completedDir = "\(onboardingDir)/Completed"
+
+        try write(
+            OnboardingTemplate.renderBuilder(appName: config.appName),
+            to: "\(onboardingDir)/OnboardingBuilder.swift"
+        )
+        try write(
+            OnboardingTemplate.renderInteractor(),
+            to: "\(onboardingDir)/OnboardingInteractor.swift"
+        )
+        try write(
+            OnboardingTemplate.renderRouter(),
+            to: "\(onboardingDir)/OnboardingRouter.swift"
+        )
+        try write(
+            OnboardingTemplate.renderWelcomeView(appName: config.appName),
+            to: "\(welcomeDir)/WelcomeView.swift"
+        )
+        try write(
+            OnboardingTemplate.renderWelcomePresenter(),
+            to: "\(welcomeDir)/WelcomePresenter.swift"
+        )
+        try write(
+            OnboardingTemplate.renderCompletedView(),
+            to: "\(completedDir)/OnboardingCompletedView.swift"
+        )
+        try write(
+            OnboardingTemplate.renderCompletedPresenter(),
+            to: "\(completedDir)/OnboardingCompletedPresenter.swift"
+        )
+    }
 
 	// MARK: - Localization Files
 

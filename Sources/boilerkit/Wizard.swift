@@ -22,6 +22,7 @@ struct Wizard {
         let (useLinting, useFormatting) = askCodeQualityTools()
         let tabs = askTabs()
         let useDevSettings = askDevSettings()
+        let useOnboarding = askOnboarding()
         let packages = askPackages(stored: storedConfig.defaultPackages)
         let outputDirectory = askOutputDirectory(stored: storedConfig.defaultOutputDirectory)
 
@@ -41,7 +42,8 @@ struct Wizard {
             localizationLanguages: localizationLanguages,
             useLinting: useLinting,
             useFormatting: useFormatting,
-            useDevSettings: useDevSettings
+            useDevSettings: useDevSettings,
+            useOnboarding: useOnboarding
         )
 
         printSummary(config)
@@ -316,6 +318,12 @@ struct Wizard {
         askYesNo("Add DevSettingsView (accessible from first tab toolbar in DEBUG builds)?", default: false)
     }
 
+    // MARK: - Onboarding
+
+    private mutating func askOnboarding() -> Bool {
+        askYesNo("Add onboarding flow (WelcomeView → OnboardingCompletedView)?", default: false)
+    }
+
     // MARK: - Packages
 
     private static let navigationKit = SwiftPackage(
@@ -447,6 +455,7 @@ struct Wizard {
         print("  SwiftLint:       \(config.useLinting ? "yes" : "no")")
         print("  SwiftFormat:     \(config.useFormatting ? "yes" : "no")")
         print("  DevSettings:     \(config.useDevSettings ? "yes" : "no")")
+        print("  Onboarding:      \(config.useOnboarding ? "yes" : "no")")
 
         print("  Tabs:")
         for tab in config.tabs {
