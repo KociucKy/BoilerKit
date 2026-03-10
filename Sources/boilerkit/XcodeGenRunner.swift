@@ -170,33 +170,33 @@ struct XcodeGenRunner {
         var entries: [String] = []
 
         if config.useLinting {
-            entries.append("""
-                      - name: SwiftLint
-                        script: |
-                          if which swiftlint > /dev/null; then
-                            swiftlint
-                          else
-                            echo "warning: SwiftLint not installed, download from https://github.com/realm/SwiftLint"
-                          fi
-                        basedOnDependencyAnalysis: false
-            """)
+            entries.append(
+                "      - name: SwiftLint\n" +
+                "        script: |\n" +
+                "          if which swiftlint > /dev/null; then\n" +
+                "            swiftlint\n" +
+                "          else\n" +
+                "            echo \"warning: SwiftLint not installed, download from https://github.com/realm/SwiftLint\"\n" +
+                "          fi\n" +
+                "        basedOnDependencyAnalysis: false"
+            )
         }
 
         if config.useFormatting {
-            entries.append("""
-                      - name: SwiftFormat
-                        script: |
-                          if which swiftformat > /dev/null; then
-                            swiftformat .
-                          else
-                            echo "warning: SwiftFormat not installed, download from https://github.com/nicklockwood/SwiftFormat"
-                          fi
-                        basedOnDependencyAnalysis: false
-            """)
+            entries.append(
+                "      - name: SwiftFormat\n" +
+                "        script: |\n" +
+                "          if which swiftformat > /dev/null; then\n" +
+                "            swiftformat .\n" +
+                "          else\n" +
+                "            echo \"warning: SwiftFormat not installed, download from https://github.com/nicklockwood/SwiftFormat\"\n" +
+                "          fi\n" +
+                "        basedOnDependencyAnalysis: false"
+            )
         }
 
         guard !entries.isEmpty else { return "" }
-        return "            preBuildScripts:\n" + entries.joined(separator: "\n")
+        return "    preBuildScripts:\n" + entries.joined(separator: "\n")
     }
 
     private func localizationSettingsYML() -> String {

@@ -219,40 +219,16 @@ struct Wizard {
     // MARK: - Code Quality Tools
 
     private mutating func askCodeQualityTools() -> (useLinting: Bool, useFormatting: Bool) {
-        let tools = [
-            (name: "SwiftLint", description: "linting"),
-            (name: "SwiftFormat", description: "formatting"),
-        ]
+        let result = selectMultiple(
+            title: "  👉 Code quality tools:",
+            options: [
+                (name: "SwiftLint",   description: "linting"),
+                (name: "SwiftFormat", description: "formatting"),
+            ],
+            defaults: [true, false] // SwiftLint on by default, SwiftFormat off
+        )
 
-        // SwiftLint on by default, SwiftFormat off
-        var selected = [true, false]
-
-        print("")
-        print("  Code quality tools ([x] = included):")
-
-        while true {
-            for (i, tool) in tools.enumerated() {
-                let mark = selected[i] ? "x" : " "
-                let index = String(format: "%2d", i + 1)
-                print("     [\(mark)] \(index). \(tool.name)  (\(tool.description))")
-            }
-            print("")
-            let input = askSub("Toggle numbers to change (e.g. 1 2), or press Enter to confirm: ")
-            let trimmed = input.trimmingCharacters(in: .whitespaces)
-            guard !trimmed.isEmpty else { break }
-
-            let indices = trimmed.split(separator: " ").compactMap { Int($0) }
-            for idx in indices {
-                guard idx >= 1, idx <= tools.count else {
-                    printWarning("Ignoring unknown tool number: \(idx)")
-                    continue
-                }
-                selected[idx - 1].toggle()
-            }
-            print("")
-        }
-
-        return (useLinting: selected[0], useFormatting: selected[1])
+        return (useLinting: result[0], useFormatting: result[1])
     }
 
     // MARK: - Tabs
@@ -272,6 +248,14 @@ struct Wizard {
         }
 
         print("")
+
+        // Single-tab: no Tab Bar is created — ask only for the root view name.
+        if count == 1 {
+            print("  No Tab Bar will be created. Name your root view:")
+            let name = askTabName()
+            return [Tab(name: name, sfSymbol: "circle")]
+        }
+
         print("  Configure each tab (name + SF Symbol):")
 
         var tabs: [Tab] = []
@@ -457,9 +441,13 @@ struct Wizard {
         print("  DevSettings:     \(config.useDevSettings ? "yes" : "no")")
         print("  Onboarding:      \(config.useOnboarding ? "yes" : "no")")
 
-        print("  Tabs:")
-        for tab in config.tabs {
-            print("    - \(tab.sanitizedName) (\(tab.sfSymbol))")
+        if config.tabs.count == 1, let tab = config.tabs.first {
+            print("  Root view:       \(tab.sanitizedName) (no Tab Bar)")
+        } else {
+            print("  Tabs:")
+            for tab in config.tabs {
+                print("    - \(tab.sanitizedName) (\(tab.sfSymbol))")
+            }
         }
 
         print("  Build configs:   Mock, Dev, Prod")
