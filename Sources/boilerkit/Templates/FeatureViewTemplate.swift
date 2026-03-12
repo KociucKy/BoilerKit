@@ -105,7 +105,7 @@ enum FeatureViewTemplate {
                     Text("\(feature)")
                         .navigationTitle("\(feature)")
                         .toolbar {
-                            #if DEBUG
+                            #if DEV || MOCK
                             ToolbarItem(placement: .topBarTrailing) {
                                 Button {
                                     presenter.showDevSettings()

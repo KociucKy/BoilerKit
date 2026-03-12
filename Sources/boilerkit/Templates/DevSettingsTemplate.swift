@@ -91,6 +91,14 @@ enum DevSettingsTemplate {
             var body: some View {
                 Text("Dev Settings")
                     .navigationTitle("Dev Settings")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button("Close") {
+                                presenter.dismiss()
+                            }
+                        }
+                    }
             }
         }
 
