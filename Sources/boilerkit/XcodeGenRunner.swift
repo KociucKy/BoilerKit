@@ -71,6 +71,7 @@ struct XcodeGenRunner {
             info:
               path: \(config.appName)/Info.plist
               properties:
+                CFBundleDisplayName: "$(BUNDLE_DISPLAY_NAME)"
                 CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
                 CFBundleShortVersionString: "$(MARKETING_VERSION)"
                 UILaunchScreen: {}
@@ -97,13 +98,13 @@ struct XcodeGenRunner {
               configs:
                 Mock:
                   PRODUCT_BUNDLE_IDENTIFIER: \(config.bundleID).mock
-                  INFOPLIST_KEY_CFBundleDisplayName: "\(config.appName) - Mock"
+                  BUNDLE_DISPLAY_NAME: "\(config.appName) - Mock"
                 Debug:
                   PRODUCT_BUNDLE_IDENTIFIER: \(config.bundleID).dev
-                  INFOPLIST_KEY_CFBundleDisplayName: "\(config.appName) - Dev"
+                  BUNDLE_DISPLAY_NAME: "\(config.appName) - Dev"
                 Release:
                   PRODUCT_BUNDLE_IDENTIFIER: \(config.bundleID)
-                  INFOPLIST_KEY_CFBundleDisplayName: "\(config.appName)"
+                  BUNDLE_DISPLAY_NAME: "\(config.appName)"
         \(preBuildScriptsYML())
           \(config.appName)Tests:
             type: bundle.unit-test
