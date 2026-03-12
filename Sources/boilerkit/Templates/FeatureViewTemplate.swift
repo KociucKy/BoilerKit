@@ -1,38 +1,13 @@
 // MARK: - FeatureViewTemplate
 
 enum FeatureViewTemplate {
-    static func render(tab: Tab, isFirst: Bool, useDevSettings: Bool) -> String {
+
+    // MARK: - Interactor
+
+    static func renderInteractor(tab: Tab) -> String {
         let feature = tab.sanitizedName
-        let featureLower = feature.lowercased()
-        let devSettingsRouterMethod = useDevSettings && isFirst
-            ? "\n            func presentDevSettings()"
-            : ""
-        let devSettingsPresenterMethod = useDevSettings && isFirst ? """
-
-
-                    // MARK: - Dev Settings
-
-                    func showDevSettings() {
-                        router.presentDevSettings()
-                    }
-            """ : ""
-        let devSettingsToolbar = useDevSettings && isFirst ? """
-
-                    #if DEBUG
-                    .toolbar {
-                        ToolbarItem(placement: .topBarTrailing) {
-                            Button {
-                                presenter.showDevSettings()
-                            } label: {
-                                Image(systemName: "hammer.fill")
-                            }
-                        }
-                    }
-                    #endif
-            """ : ""
-
         return """
-        import SwiftUI
+        import Foundation
         import NavigationKit
 
         // MARK: - \(feature)Interactor
@@ -43,6 +18,19 @@ enum FeatureViewTemplate {
         }
 
         extension CoreInteractor: \(feature)Interactor {}
+        """
+    }
+
+    // MARK: - Router
+
+    static func renderRouter(tab: Tab, isFirst: Bool, useDevSettings: Bool) -> String {
+        let feature = tab.sanitizedName
+        let devSettingsRouterMethod = useDevSettings && isFirst
+            ? "\n    func presentDevSettings()"
+            : ""
+        return """
+        import Foundation
+        import NavigationKit
 
         // MARK: - \(feature)Router
 
@@ -52,6 +40,24 @@ enum FeatureViewTemplate {
         }
 
         extension CoreRouter: \(feature)Router {}
+        """
+    }
+
+    // MARK: - Presenter
+
+    static func renderPresenter(tab: Tab, isFirst: Bool, useDevSettings: Bool) -> String {
+        let feature = tab.sanitizedName
+        let devSettingsPresenterMethod = useDevSettings && isFirst ? """
+
+
+            // MARK: - Dev Settings
+
+            func showDevSettings() {
+                router.presentDevSettings()
+            }
+        """ : ""
+        return """
+        import Foundation
 
         // MARK: - \(feature)Presenter
 
@@ -71,6 +77,31 @@ enum FeatureViewTemplate {
                 self.router = router
             }\(devSettingsPresenterMethod)
         }
+        """
+    }
+
+    // MARK: - View
+
+    static func renderView(tab: Tab, isFirst: Bool, useDevSettings: Bool) -> String {
+        let feature = tab.sanitizedName
+        let featureLower = feature.lowercased()
+        let devSettingsToolbar = useDevSettings && isFirst ? """
+
+            #if DEBUG
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        presenter.showDevSettings()
+                    } label: {
+                        Image(systemName: "hammer.fill")
+                    }
+                }
+            }
+            #endif
+        """ : ""
+        return """
+        import SwiftUI
+        import NavigationKit
 
         // MARK: - \(feature)View
 

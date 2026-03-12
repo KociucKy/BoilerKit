@@ -75,8 +75,12 @@ struct FileGenerator {
 			"\(root)/\(config.appName)Tests/Shared/Mocks",
 		]
 
-		let tabDirs = config.tabs.map {
-			"\(root)/\(config.appName)/Core/\($0.sanitizedName)"
+		let tabDirs = config.tabs.flatMap {
+			[
+				"\(root)/\(config.appName)/Core/\($0.sanitizedName)",
+				"\(root)/\(config.appName)/Core/\($0.sanitizedName)/RIB",
+				"\(root)/\(config.appName)/Core/\($0.sanitizedName)/Presentation",
+			]
 		}
 
 		if config.tabs.count > 1 {
@@ -175,13 +179,24 @@ struct FileGenerator {
 	private func writeFeatureFiles(root: String) throws {
 		for (index, tab) in config.tabs.enumerated() {
 			let featureDir = "\(root)/\(config.appName)/Core/\(tab.sanitizedName)"
+			let ribDir = "\(featureDir)/RIB"
+			let isFirst = index == 0
+
 			try write(
-				FeatureViewTemplate.render(
-					tab: tab,
-					isFirst: index == 0,
-					useDevSettings: config.useDevSettings
-				),
-				to: "\(featureDir)/\(tab.sanitizedName)View.swift"
+				FeatureViewTemplate.renderInteractor(tab: tab),
+				to: "\(ribDir)/\(tab.sanitizedName)Interactor.swift"
+			)
+			try write(
+				FeatureViewTemplate.renderRouter(tab: tab, isFirst: isFirst, useDevSettings: config.useDevSettings),
+				to: "\(ribDir)/\(tab.sanitizedName)Router.swift"
+			)
+			try write(
+				FeatureViewTemplate.renderPresenter(tab: tab, isFirst: isFirst, useDevSettings: config.useDevSettings),
+				to: "\(featureDir)/Presentation/\(tab.sanitizedName)Presenter.swift"
+			)
+			try write(
+				FeatureViewTemplate.renderView(tab: tab, isFirst: isFirst, useDevSettings: config.useDevSettings),
+				to: "\(featureDir)/Presentation/\(tab.sanitizedName)View.swift"
 			)
 		}
 	}
