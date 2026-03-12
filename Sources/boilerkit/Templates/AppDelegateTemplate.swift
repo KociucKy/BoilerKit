@@ -61,7 +61,7 @@ enum AppDelegateTemplate {
             var dependencies: Dependencies!
             var builder: CoreBuilder!
             var onboardingBuilder: OnboardingBuilder!
-            var appState: AppState!
+            var appState: OnboardingState!
 
             // MARK: - UIApplicationDelegate
 
@@ -81,8 +81,8 @@ enum AppDelegateTemplate {
                 #endif
 
                 dependencies = Dependencies(config: config)
-                appState = AppState()
-                dependencies.dependencyContainer.register(AppState.self, service: appState)
+                appState = OnboardingState()
+                dependencies.dependencyContainer.register(OnboardingState.self, service: appState)
                 builder = CoreBuilder(
                     interactor: CoreInteractor(container: dependencies.dependencyContainer)
                 )

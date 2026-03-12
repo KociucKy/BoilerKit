@@ -5,10 +5,10 @@ enum AppStateTemplate {
         """
         import SwiftUI
 
-        // MARK: - AppState
+        // MARK: - OnboardingState
 
         @Observable
-        final class AppState {
+        final class OnboardingState {
 
             // MARK: - Properties
 

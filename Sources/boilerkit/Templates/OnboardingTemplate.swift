@@ -62,12 +62,12 @@ enum OnboardingTemplate {
 
             // MARK: - Properties
 
-            private let appState: AppState
+            private let appState: OnboardingState
 
             // MARK: - Init
 
             init(container: DependencyContainer) {
-                self.appState = container.resolve(AppState.self)!
+                self.appState = container.resolve(OnboardingState.self)!
             }
 
             // MARK: - App State

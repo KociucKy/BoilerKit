@@ -130,7 +130,7 @@ struct FileGenerator {
         if config.useOnboarding {
             try write(
                 AppStateTemplate.render(),
-                to: "\(appDir)/AppState.swift"
+                to: "\(appDir)/OnboardingState.swift"
             )
             try write(
                 AppViewBuilderTemplate.render(),
