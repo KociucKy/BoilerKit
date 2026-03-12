@@ -89,9 +89,10 @@ struct FileGenerator {
 
         let onboardingDirs = config.useOnboarding
             ? [
-                "\(root)/\(config.appName)/Core/Onboarding",
-                "\(root)/\(config.appName)/Core/Onboarding/Welcome",
-                "\(root)/\(config.appName)/Core/Onboarding/Completed",
+                "\(root)/\(config.appName)/Onboarding",
+                "\(root)/\(config.appName)/Onboarding/RIB",
+                "\(root)/\(config.appName)/Onboarding/Welcome",
+                "\(root)/\(config.appName)/Onboarding/Completed",
             ]
             : []
 
@@ -238,21 +239,22 @@ struct FileGenerator {
     // MARK: - Onboarding Files
 
     private func writeOnboardingFiles(root: String) throws {
-        let onboardingDir = "\(root)/\(config.appName)/Core/Onboarding"
+        let onboardingDir = "\(root)/\(config.appName)/Onboarding"
+        let ribDir = "\(onboardingDir)/RIB"
         let welcomeDir = "\(onboardingDir)/Welcome"
         let completedDir = "\(onboardingDir)/Completed"
 
         try write(
             OnboardingTemplate.renderBuilder(appName: config.appName),
-            to: "\(onboardingDir)/OnboardingBuilder.swift"
+            to: "\(ribDir)/OnboardingBuilder.swift"
         )
         try write(
             OnboardingTemplate.renderInteractor(),
-            to: "\(onboardingDir)/OnboardingInteractor.swift"
+            to: "\(ribDir)/OnboardingInteractor.swift"
         )
         try write(
             OnboardingTemplate.renderRouter(),
-            to: "\(onboardingDir)/OnboardingRouter.swift"
+            to: "\(ribDir)/OnboardingRouter.swift"
         )
         try write(
             OnboardingTemplate.renderWelcomeView(appName: config.appName),
