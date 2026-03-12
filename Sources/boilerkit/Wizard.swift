@@ -190,28 +190,15 @@ struct Wizard {
             ("ko", "Korean"),
         ]
 
-        print("")
-        print("  Available languages (English is always included):")
-        for (i, lang) in available.enumerated() {
-            let index = String(format: "%2d", i + 1)
-            print("    \(index). \(lang.label) (\(lang.code))")
-        }
-        print("")
+        let result = selectMultiple(
+            title: "  🌍 Languages (English is always included):",
+            options: available.map { (name: $0.label, description: $0.code) },
+            defaults: Array(repeating: false, count: available.count)
+        )
 
-        let input = askSub("Enter numbers separated by spaces, or press Enter to skip: ")
-        let trimmed = input.trimmingCharacters(in: .whitespaces)
-
-        guard !trimmed.isEmpty else { return (true, []) }
-
-        let selected = trimmed
-            .split(separator: " ")
-            .compactMap { Int($0) }
-            .filter { $0 >= 1 && $0 <= available.count }
-            .map { available[$0 - 1].code }
-
-        // deduplicate while preserving order
-        var seen = Set<String>()
-        let languages = selected.filter { seen.insert($0).inserted }
+        let languages = zip(available, result)
+            .filter { $0.1 }
+            .map { $0.0.code }
 
         return (true, languages)
     }
