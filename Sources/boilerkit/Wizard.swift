@@ -4,10 +4,6 @@ import Foundation
 
 struct Wizard {
 
-    // MARK: - State
-
-    private var step = 0
-
     // MARK: - Run
 
     mutating func run() -> ProjectConfig {
@@ -23,8 +19,11 @@ struct Wizard {
         let swiftVersion = askSwiftVersion()
         let (useSwiftData, entityName) = askSwiftData()
         let (useLocalization, localizationLanguages) = askLocalization()
+        let (useLinting, useFormatting) = askCodeQualityTools()
         let tabs = askTabs()
-        let navigationKitURL = askNavigationKitURL()
+        let useDevSettings = askDevSettings()
+        let useOnboarding = askOnboarding()
+        let packages = askPackages(stored: storedConfig.defaultPackages)
         let outputDirectory = askOutputDirectory(stored: storedConfig.defaultOutputDirectory)
 
         let config = ProjectConfig(
@@ -37,10 +36,14 @@ struct Wizard {
             swiftDataEntityName: entityName,
             tabs: tabs,
             teamID: teamID,
-            navigationKitURL: navigationKitURL,
+            packages: packages,
             outputDirectory: outputDirectory,
             useLocalization: useLocalization,
-            localizationLanguages: localizationLanguages
+            localizationLanguages: localizationLanguages,
+            useLinting: useLinting,
+            useFormatting: useFormatting,
+            useDevSettings: useDevSettings,
+            useOnboarding: useOnboarding
         )
 
         printSummary(config)
@@ -94,35 +97,20 @@ struct Wizard {
     // MARK: - Platforms
 
     private mutating func askPlatforms() -> [Platform] {
-        print("  Target platforms (iOS is always included):")
-        print("    1. macOS")
-        print("    2. watchOS")
-        print("    3. tvOS")
-        print("    4. visionOS")
-        print("")
+        let optional: [(platform: Platform, description: String)] = [
+            (.macOS,    "Mac Catalyst / native macOS"),
+            (.watchOS,  "Apple Watch"),
+            (.tvOS,     "Apple TV"),
+            (.visionOS, "Apple Vision Pro"),
+        ]
 
-        let input = ask("Add platforms? Enter numbers separated by spaces, or press Enter to skip: ")
-        let trimmed = input.trimmingCharacters(in: .whitespaces)
+        let selected = selectMultiple(
+            title: "  📱 Platforms (iOS is always included):",
+            options: optional.map { (name: $0.platform.rawValue, description: $0.description) },
+            defaults: Array(repeating: false, count: optional.count)
+        )
 
-        var platforms: [Platform] = [.iOS]
-
-        guard !trimmed.isEmpty else { return platforms }
-
-        let choices = trimmed.split(separator: " ").compactMap { Int($0) }
-        let optional: [Platform] = [.macOS, .watchOS, .tvOS, .visionOS]
-
-        for choice in choices {
-            guard choice >= 1, choice <= optional.count else {
-                printWarning("Ignoring unknown platform option: \(choice)")
-                continue
-            }
-            let platform = optional[choice - 1]
-            if !platforms.contains(where: { $0.rawValue == platform.rawValue }) {
-                platforms.append(platform)
-            }
-        }
-
-        return platforms
+        return [.iOS] + zip(optional, selected).compactMap { $0.1 ? $0.0.platform : nil }
     }
 
     // MARK: - Deployment Targets
@@ -187,30 +175,32 @@ struct Wizard {
             ("ko", "Korean"),
         ]
 
-        print("")
-        print("  Available languages (English is always included):")
-        for (i, lang) in available.enumerated() {
-            let index = String(format: "%2d", i + 1)
-            print("    \(index). \(lang.label) (\(lang.code))")
-        }
-        print("")
+        let result = selectMultiple(
+            title: "  🌍 Languages (English is always included):",
+            options: available.map { (name: $0.label, description: $0.code) },
+            defaults: Array(repeating: false, count: available.count)
+        )
 
-        let input = askSub("Enter numbers separated by spaces, or press Enter to skip: ")
-        let trimmed = input.trimmingCharacters(in: .whitespaces)
-
-        guard !trimmed.isEmpty else { return (true, []) }
-
-        let selected = trimmed
-            .split(separator: " ")
-            .compactMap { Int($0) }
-            .filter { $0 >= 1 && $0 <= available.count }
-            .map { available[$0 - 1].code }
-
-        // deduplicate while preserving order
-        var seen = Set<String>()
-        let languages = selected.filter { seen.insert($0).inserted }
+        let languages = zip(available, result)
+            .filter { $0.1 }
+            .map { $0.0.code }
 
         return (true, languages)
+    }
+
+    // MARK: - Code Quality Tools
+
+    private mutating func askCodeQualityTools() -> (useLinting: Bool, useFormatting: Bool) {
+        let result = selectMultiple(
+            title: "  🔧 Code quality tools:",
+            options: [
+                (name: "SwiftLint",   description: "linting"),
+                (name: "SwiftFormat", description: "formatting"),
+            ],
+            defaults: [true, false] // SwiftLint on by default, SwiftFormat off
+        )
+
+        return (useLinting: result[0], useFormatting: result[1])
     }
 
     // MARK: - Tabs
@@ -230,6 +220,14 @@ struct Wizard {
         }
 
         print("")
+
+        // Single-tab: no Tab Bar is created — ask only for the root view name.
+        if count == 1 {
+            print("  No Tab Bar will be created. Name your root view:")
+            let name = askTabName()
+            return [Tab(name: name, sfSymbol: "circle")]
+        }
+
         print("  Configure each tab (name + SF Symbol):")
 
         var tabs: [Tab] = []
@@ -270,6 +268,64 @@ struct Wizard {
         return trimmed.isEmpty ? defaultValue : trimmed
     }
 
+    // MARK: - Dev Settings
+
+    private mutating func askDevSettings() -> Bool {
+        askYesNo("Add DevSettingsView (accessible from first tab toolbar in DEBUG builds)?", default: false)
+    }
+
+    // MARK: - Onboarding
+
+    private mutating func askOnboarding() -> Bool {
+        askYesNo("Add onboarding flow (WelcomeView → OnboardingCompletedView)?", default: false)
+    }
+
+    // MARK: - Packages
+
+    private static let navigationKit = SwiftPackage(
+        name: "NavigationKit",
+        url: "https://github.com/KociucKy/NavigationKit",
+        branch: "master"
+    )
+
+    private mutating func askPackages(stored: [SwiftPackage]) -> [SwiftPackage] {
+        let savedPackages = stored.filter { $0.name != Self.navigationKit.name }
+
+        var packages: [SwiftPackage] = [Self.navigationKit]
+
+        if !savedPackages.isEmpty {
+            let selected = selectMultiple(
+                title: "  📦 Packages (NavigationKit always included):",
+                options: savedPackages.map { (name: $0.name, description: "\($0.url)  (\($0.branch))") },
+                defaults: Array(repeating: true, count: savedPackages.count)
+            )
+            for (pkg, isSelected) in zip(savedPackages, selected) where isSelected {
+                packages.append(pkg)
+            }
+        } else {
+            print("")
+            print("  [x] NavigationKit (always included)")
+        }
+
+        // Allow adding extra packages for this run
+        print("")
+        print("  Add more packages? Enter \"Name https://url branch\" or press Enter to skip.")
+        while true {
+            let input = askSub("  Package (or Enter to finish): ")
+            let trimmed = input.trimmingCharacters(in: .whitespaces)
+            guard !trimmed.isEmpty else { break }
+
+            let parts = trimmed.split(separator: " ", maxSplits: 2).map(String.init)
+            guard parts.count == 3 else {
+                printError("Format must be: Name https://url branch")
+                continue
+            }
+            packages.append(SwiftPackage(name: parts[0], url: parts[1], branch: parts[2]))
+        }
+
+        return packages
+    }
+
     // MARK: - Team ID
 
     private mutating func askTeamID(stored: String?) -> String? {
@@ -281,15 +337,6 @@ struct Wizard {
         let input = ask("Apple Team ID (press Enter to skip): ")
         let trimmed = input.trimmingCharacters(in: .whitespaces)
         return trimmed.isEmpty ? nil : trimmed
-    }
-
-    // MARK: - NavigationKit URL
-
-    private mutating func askNavigationKitURL() -> String {
-        let defaultValue = "https://github.com/KociucKy/NavigationKit"
-        let input = ask("NavigationKit SPM URL [\(defaultValue)]: ")
-        let trimmed = input.trimmingCharacters(in: .whitespaces)
-        return trimmed.isEmpty ? defaultValue : trimmed
     }
 
     // MARK: - Output Directory
@@ -337,14 +384,24 @@ struct Wizard {
             print("  Localization:    none")
         }
 
-        print("  Tabs:")
-        for tab in config.tabs {
-            print("    - \(tab.sanitizedName) (\(tab.sfSymbol))")
+        print("  SwiftLint:       \(config.useLinting ? "yes" : "no")")
+        print("  SwiftFormat:     \(config.useFormatting ? "yes" : "no")")
+        print("  DevSettings:     \(config.useDevSettings ? "yes" : "no")")
+        print("  Onboarding:      \(config.useOnboarding ? "yes" : "no")")
+
+        if config.tabs.count == 1, let tab = config.tabs.first {
+            print("  Root view:       \(tab.sanitizedName) (no Tab Bar)")
+        } else {
+            print("  Tabs:")
+            for tab in config.tabs {
+                print("    - \(tab.sanitizedName) (\(tab.sfSymbol))")
+            }
         }
 
         print("  Build configs:   Mock, Dev, Prod")
         print("  Team ID:         \(config.teamID ?? "none")")
-        print("  NavigationKit:   \(config.navigationKitURL)")
+        let packageNames = config.packages.map(\.name).joined(separator: ", ")
+        print("  Packages:        \(packageNames)")
         print("  Output:          \(config.outputDirectory)")
         print("  ──────────────────────────────────────")
         print("")
@@ -378,12 +435,24 @@ struct Wizard {
         let shouldOfferOutput = stored.defaultOutputDirectory == nil
         let shouldOfferTeamID = stored.defaultTeamID == nil && config.teamID != nil
 
-        guard shouldOfferOutput || shouldOfferTeamID else { return }
+        // New packages: those in config but not already in stored defaults
+        // (exclude NavigationKit since it's always pinned, not user-added)
+        let storedPackageNames = Set(stored.defaultPackages.map(\.name))
+        let newPackages = config.packages.filter {
+            $0.name != Wizard.navigationKit.name && !storedPackageNames.contains($0.name)
+        }
+        let shouldOfferPackages = !newPackages.isEmpty
+
+        guard shouldOfferOutput || shouldOfferTeamID || shouldOfferPackages else { return }
 
         var parts: [String] = []
         if shouldOfferOutput { parts.append("output directory") }
         if shouldOfferTeamID { parts.append("Team ID") }
-        let label = parts.joined(separator: " and ")
+        if shouldOfferPackages {
+            let names = newPackages.map(\.name).joined(separator: ", ")
+            parts.append("packages (\(names))")
+        }
+        let label = parts.joined(separator: ", ")
 
         let save = askYesNo("Save \(label) as defaults for future projects?", default: true)
         guard save else { return }
@@ -395,6 +464,9 @@ struct Wizard {
             if shouldOfferTeamID {
                 c.defaultTeamID = config.teamID
             }
+            if shouldOfferPackages {
+                c.defaultPackages.append(contentsOf: newPackages)
+            }
         }
 
         print("  ✅ Defaults saved. Run 'boilerkit config' to view or change them.")
@@ -403,23 +475,21 @@ struct Wizard {
 
     // MARK: - Helpers
 
-    /// Numbered prompt — increments the step counter once, then re-prompts
-    /// without incrementing on validation retries.
+    /// Finger-right prompt — used for each top-level wizard question.
     private mutating func ask(_ prompt: String) -> String {
-        step += 1
-        print("  \(step). \(prompt)", terminator: "")
+        print("  👉 \(prompt)", terminator: "")
         guard let line = readLine() else { exit(0) }
         return line
     }
 
-    /// Re-prompt under the same step number after a validation error.
+    /// Re-prompt after a validation error (same emoji, no side effects).
     private mutating func reask(_ prompt: String) -> String {
-        print("  \(step). \(prompt)", terminator: "")
+        print("  👉 \(prompt)", terminator: "")
         guard let line = readLine() else { exit(0) }
         return line
     }
 
-    /// Numbered yes/no prompt — increments the step counter.
+    /// Yes/no prompt — delegates to ask().
     private mutating func askYesNo(_ prompt: String, default defaultValue: Bool) -> Bool {
         let hint = defaultValue ? "[Y/n]" : "[y/N]"
         let input = ask("\(prompt) \(hint): ")
@@ -429,7 +499,7 @@ struct Wizard {
         return trimmed == "y" || trimmed == "yes"
     }
 
-    /// Un-numbered sub-prompt for follow-up inputs within the same step
+    /// Sub-prompt for follow-up inputs within the same question
     /// (deployment targets per platform, tab name/symbol, entity name).
     private func askSub(_ prompt: String) -> String {
         print("     \(prompt)", terminator: "")

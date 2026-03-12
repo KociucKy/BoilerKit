@@ -67,11 +67,11 @@ struct XcodeGenRunner {
             resources:
               - path: \(config.appName)/Assets.xcassets
             dependencies:
-              - package: NavigationKit
+        \(packageDependenciesYML())
             info:
               path: \(config.appName)/Info.plist
               properties:
-                CFBundleDisplayName: \(config.appName)
+                CFBundleDisplayName: "$(BUNDLE_DISPLAY_NAME)"
                 CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
                 CFBundleShortVersionString: "$(MARKETING_VERSION)"
                 UILaunchScreen: {}
@@ -98,14 +98,14 @@ struct XcodeGenRunner {
               configs:
                 Mock:
                   PRODUCT_BUNDLE_IDENTIFIER: \(config.bundleID).mock
-                  INFOPLIST_KEY_CFBundleDisplayName: "\(config.appName) - Mock"
+                  BUNDLE_DISPLAY_NAME: "\(config.appName) - Mock"
                 Debug:
                   PRODUCT_BUNDLE_IDENTIFIER: \(config.bundleID).dev
-                  INFOPLIST_KEY_CFBundleDisplayName: "\(config.appName) - Dev"
+                  BUNDLE_DISPLAY_NAME: "\(config.appName) - Dev"
                 Release:
                   PRODUCT_BUNDLE_IDENTIFIER: \(config.bundleID)
-                  INFOPLIST_KEY_CFBundleDisplayName: "\(config.appName)"
-
+                  BUNDLE_DISPLAY_NAME: "\(config.appName)"
+        \(preBuildScriptsYML())
           \(config.appName)Tests:
             type: bundle.unit-test
             platform: \(platformsYML())
@@ -154,12 +154,49 @@ struct XcodeGenRunner {
     }
 
     private func packagesYML() -> String {
-        """
-        packages:
-          NavigationKit:
-            url: \(config.navigationKitURL)
-            from: "1.1.1"
-        """
+        let entries = config.packages.map { pkg in
+            "  \(pkg.name):\n    url: \(pkg.url)\n    branch: \"\(pkg.branch)\""
+        }.joined(separator: "\n")
+        return "packages:\n\(entries)"
+    }
+
+    private func packageDependenciesYML() -> String {
+        config.packages.map { pkg in
+            "          - package: \(pkg.name)"
+        }.joined(separator: "\n")
+    }
+
+    private func preBuildScriptsYML() -> String {
+        var entries: [String] = []
+
+        if config.useLinting {
+            entries.append(
+                "      - name: SwiftLint\n" +
+                "        script: |\n" +
+                "          if which swiftlint > /dev/null; then\n" +
+                "            swiftlint\n" +
+                "          else\n" +
+                "            echo \"warning: SwiftLint not installed, download from https://github.com/realm/SwiftLint\"\n" +
+                "          fi\n" +
+                "        basedOnDependencyAnalysis: false"
+            )
+        }
+
+        if config.useFormatting {
+            entries.append(
+                "      - name: SwiftFormat\n" +
+                "        script: |\n" +
+                "          if which swiftformat > /dev/null; then\n" +
+                "            swiftformat .\n" +
+                "          else\n" +
+                "            echo \"warning: SwiftFormat not installed, download from https://github.com/nicklockwood/SwiftFormat\"\n" +
+                "          fi\n" +
+                "        basedOnDependencyAnalysis: false"
+            )
+        }
+
+        guard !entries.isEmpty else { return "" }
+        return "    preBuildScripts:\n" + entries.joined(separator: "\n")
     }
 
     private func localizationSettingsYML() -> String {

@@ -1,12 +1,13 @@
 // MARK: - FeatureViewTemplate
 
 enum FeatureViewTemplate {
-    static func render(tab: Tab) -> String {
-        let feature = tab.sanitizedName
-        let featureLower = feature.lowercased()
 
+    // MARK: - Interactor
+
+    static func renderInteractor(tab: Tab) -> String {
+        let feature = tab.sanitizedName
         return """
-        import SwiftUI
+        import Foundation
         import NavigationKit
 
         // MARK: - \(feature)Interactor
@@ -17,15 +18,46 @@ enum FeatureViewTemplate {
         }
 
         extension CoreInteractor: \(feature)Interactor {}
+        """
+    }
+
+    // MARK: - Router
+
+    static func renderRouter(tab: Tab, isFirst: Bool, useDevSettings: Bool) -> String {
+        let feature = tab.sanitizedName
+        let devSettingsRouterMethod = useDevSettings && isFirst
+            ? "\n    func presentDevSettings()"
+            : ""
+        return """
+        import Foundation
+        import NavigationKit
 
         // MARK: - \(feature)Router
 
         @MainActor
         protocol \(feature)Router {
-            func dismissScreen()
+            func dismissScreen()\(devSettingsRouterMethod)
         }
 
         extension CoreRouter: \(feature)Router {}
+        """
+    }
+
+    // MARK: - Presenter
+
+    static func renderPresenter(tab: Tab, isFirst: Bool, useDevSettings: Bool) -> String {
+        let feature = tab.sanitizedName
+        let devSettingsPresenterMethod = useDevSettings && isFirst ? """
+
+
+            // MARK: - Dev Settings
+
+            func showDevSettings() {
+                router.presentDevSettings()
+            }
+        """ : ""
+        return """
+        import Foundation
 
         // MARK: - \(feature)Presenter
 
@@ -43,35 +75,92 @@ enum FeatureViewTemplate {
             init(interactor: any \(feature)Interactor, router: any \(feature)Router) {
                 self.interactor = interactor
                 self.router = router
-            }
-        }
-
-        // MARK: - \(feature)View
-
-        struct \(feature)View: View {
-
-            // MARK: - Properties
-
-            @State var presenter: \(feature)Presenter
-
-            // MARK: - Body
-
-            var body: some View {
-                Text("\(feature)")
-                    .navigationTitle("\(feature)")
-            }
-        }
-
-        // MARK: - Preview
-
-        #Preview {
-            let container = DevPreview.shared.container
-            let builder = CoreBuilder(interactor: CoreInteractor(container: container))
-
-            return RouterView { router in
-                builder.\(featureLower)View(router: router)
-            }
+            }\(devSettingsPresenterMethod)
         }
         """
+    }
+
+    // MARK: - View
+
+    static func renderView(tab: Tab, isFirst: Bool, useDevSettings: Bool) -> String {
+        let feature = tab.sanitizedName
+        let featureLower = feature.lowercased()
+
+        if useDevSettings && isFirst {
+            return """
+            import SwiftUI
+            import NavigationKit
+
+            // MARK: - \(feature)View
+
+            struct \(feature)View: View {
+
+                // MARK: - Properties
+
+                @State var presenter: \(feature)Presenter
+
+                // MARK: - Body
+
+                var body: some View {
+                    Text("\(feature)")
+                        .navigationTitle("\(feature)")
+                        .toolbar {
+                            #if DEV || MOCK
+                            ToolbarItem(placement: .topBarTrailing) {
+                                Button {
+                                    presenter.showDevSettings()
+                                } label: {
+                                    Image(systemName: "hammer.fill")
+                                }
+                            }
+                            #endif
+                        }
+                }
+            }
+
+            // MARK: - Preview
+
+            #Preview {
+                let container = DevPreview.shared.container
+                let builder = CoreBuilder(interactor: CoreInteractor(container: container))
+
+                return RouterView { router in
+                    builder.\(featureLower)View(router: router)
+                }
+            }
+            """
+        } else {
+            return """
+            import SwiftUI
+            import NavigationKit
+
+            // MARK: - \(feature)View
+
+            struct \(feature)View: View {
+
+                // MARK: - Properties
+
+                @State var presenter: \(feature)Presenter
+
+                // MARK: - Body
+
+                var body: some View {
+                    Text("\(feature)")
+                        .navigationTitle("\(feature)")
+                }
+            }
+
+            // MARK: - Preview
+
+            #Preview {
+                let container = DevPreview.shared.container
+                let builder = CoreBuilder(interactor: CoreInteractor(container: container))
+
+                return RouterView { router in
+                    builder.\(featureLower)View(router: router)
+                }
+            }
+            """
+        }
     }
 }

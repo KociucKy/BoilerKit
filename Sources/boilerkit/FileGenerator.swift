@@ -36,8 +36,24 @@ struct FileGenerator {
 			try writeLocalizationFiles(root: root)
 		}
 
-		try writeAssets(root: root)
+        if config.useDevSettings {
+            try writeDevSettingsFiles(root: root)
+        }
+
+        if config.useOnboarding {
+            try writeOnboardingFiles(root: root)
+        }
+
+        try writeAssets(root: root)
 		try writeTestFiles(root: root)
+
+		if config.useLinting {
+			try writeLintingConfig(root: root)
+		}
+
+		if config.useFormatting {
+			try writeFormattingConfig(root: root)
+		}
 
 		print("  ✅ Source files written")
 	}
@@ -45,10 +61,9 @@ struct FileGenerator {
 	// MARK: - Directories
 
 	private func createDirectories(root: String) throws {
-		let dirs = [
+		var dirs = [
 			root,
 			"\(root)/\(config.appName)/Root/RIB",
-			"\(root)/\(config.appName)/Core/TabBar",
 			"\(root)/\(config.appName)/Components/Extensions",
 			"\(root)/\(config.appName)/Components/ViewModifiers",
 			"\(root)/\(config.appName)/Components/Views",
@@ -60,37 +75,73 @@ struct FileGenerator {
 			"\(root)/\(config.appName)Tests/Shared/Mocks",
 		]
 
-		let tabDirs = config.tabs.map {
-			"\(root)/\(config.appName)/Core/\($0.sanitizedName)"
+		let tabDirs = config.tabs.flatMap {
+			[
+				"\(root)/\(config.appName)/Core/\($0.sanitizedName)",
+				"\(root)/\(config.appName)/Core/\($0.sanitizedName)/RIB",
+				"\(root)/\(config.appName)/Core/\($0.sanitizedName)/Presentation",
+			]
 		}
 
-		for dir in dirs + tabDirs {
+		if config.tabs.count > 1 {
+			dirs.append("\(root)/\(config.appName)/Core/TabBar")
+		}
+
+        let devSettingsDirs = config.useDevSettings
+            ? [
+                "\(root)/\(config.appName)/Core/DevSettings",
+                "\(root)/\(config.appName)/Core/DevSettings/RIB",
+                "\(root)/\(config.appName)/Core/DevSettings/Presentation",
+            ]
+            : []
+
+        let onboardingDirs = config.useOnboarding
+            ? [
+                "\(root)/\(config.appName)/Onboarding",
+                "\(root)/\(config.appName)/Onboarding/RIB",
+                "\(root)/\(config.appName)/Onboarding/Welcome",
+                "\(root)/\(config.appName)/Onboarding/Completed",
+            ]
+            : []
+
+        for dir in dirs + tabDirs + devSettingsDirs + onboardingDirs {
 			try fileManager.createDirectory(atPath: dir, withIntermediateDirectories: true)
 		}
 	}
 
 	// MARK: - Root Files
 
-	private func writeRootFiles(root: String) throws {
-		let appDir = "\(root)/\(config.appName)/Root"
+    private func writeRootFiles(root: String) throws {
+        let appDir = "\(root)/\(config.appName)/Root"
 
-		try write(
-			AppTemplate.render(config: config),
-			to: "\(appDir)/\(config.appName)App.swift"
-		)
-		try write(
-			AppDelegateTemplate.render(config: config),
-			to: "\(appDir)/AppDelegate.swift"
-		)
-		try write(
-			DependenciesTemplate.render(config: config),
-			to: "\(appDir)/Dependencies.swift"
-		)
-		try write(
-			DependencyContainerTemplate.render(),
-			to: "\(appDir)/DependencyContainer.swift"
-		)
-	}
+        try write(
+            AppTemplate.render(config: config),
+            to: "\(appDir)/\(config.appName)App.swift"
+        )
+        try write(
+            AppDelegateTemplate.render(config: config),
+            to: "\(appDir)/AppDelegate.swift"
+        )
+        try write(
+            DependenciesTemplate.render(config: config),
+            to: "\(appDir)/Dependencies.swift"
+        )
+        try write(
+            DependencyContainerTemplate.render(),
+            to: "\(appDir)/DependencyContainer.swift"
+        )
+
+        if config.useOnboarding {
+            try write(
+                AppStateTemplate.render(),
+                to: "\(appDir)/OnboardingState.swift"
+            )
+            try write(
+                AppViewBuilderTemplate.render(),
+                to: "\(appDir)/AppViewBuilder.swift"
+            )
+        }
+    }
 
 	// MARK: - RIB Files
 
@@ -118,6 +169,7 @@ struct FileGenerator {
 	// MARK: - TabBar Files
 
 	private func writeTabBarFiles(root: String) throws {
+		guard config.tabs.count > 1 else { return }
 		let tabBarDir = "\(root)/\(config.appName)/Core/TabBar"
 
 		try write(
@@ -129,11 +181,26 @@ struct FileGenerator {
 	// MARK: - Feature Files (one per tab)
 
 	private func writeFeatureFiles(root: String) throws {
-		for tab in config.tabs {
+		for (index, tab) in config.tabs.enumerated() {
 			let featureDir = "\(root)/\(config.appName)/Core/\(tab.sanitizedName)"
+			let ribDir = "\(featureDir)/RIB"
+			let isFirst = index == 0
+
 			try write(
-				FeatureViewTemplate.render(tab: tab),
-				to: "\(featureDir)/\(tab.sanitizedName)View.swift"
+				FeatureViewTemplate.renderInteractor(tab: tab),
+				to: "\(ribDir)/\(tab.sanitizedName)Interactor.swift"
+			)
+			try write(
+				FeatureViewTemplate.renderRouter(tab: tab, isFirst: isFirst, useDevSettings: config.useDevSettings),
+				to: "\(ribDir)/\(tab.sanitizedName)Router.swift"
+			)
+			try write(
+				FeatureViewTemplate.renderPresenter(tab: tab, isFirst: isFirst, useDevSettings: config.useDevSettings),
+				to: "\(featureDir)/Presentation/\(tab.sanitizedName)Presenter.swift"
+			)
+			try write(
+				FeatureViewTemplate.renderView(tab: tab, isFirst: isFirst, useDevSettings: config.useDevSettings),
+				to: "\(featureDir)/Presentation/\(tab.sanitizedName)View.swift"
 			)
 		}
 	}
@@ -177,6 +244,66 @@ struct FileGenerator {
 			to: "\(servicesDir)/\(entityName)Manager.swift"
 		)
 	}
+
+    // MARK: - DevSettings Files
+
+    private func writeDevSettingsFiles(root: String) throws {
+        let devSettingsDir = "\(root)/\(config.appName)/Core/DevSettings"
+        try write(
+            DevSettingsTemplate.renderInteractor(),
+            to: "\(devSettingsDir)/RIB/DevSettingsInteractor.swift"
+        )
+        try write(
+            DevSettingsTemplate.renderRouter(),
+            to: "\(devSettingsDir)/RIB/DevSettingsRouter.swift"
+        )
+        try write(
+            DevSettingsTemplate.renderPresenter(),
+            to: "\(devSettingsDir)/Presentation/DevSettingsPresenter.swift"
+        )
+        try write(
+            DevSettingsTemplate.renderView(),
+            to: "\(devSettingsDir)/Presentation/DevSettingsView.swift"
+        )
+    }
+
+    // MARK: - Onboarding Files
+
+    private func writeOnboardingFiles(root: String) throws {
+        let onboardingDir = "\(root)/\(config.appName)/Onboarding"
+        let ribDir = "\(onboardingDir)/RIB"
+        let welcomeDir = "\(onboardingDir)/Welcome"
+        let completedDir = "\(onboardingDir)/Completed"
+
+        try write(
+            OnboardingTemplate.renderBuilder(appName: config.appName),
+            to: "\(ribDir)/OnboardingBuilder.swift"
+        )
+        try write(
+            OnboardingTemplate.renderInteractor(),
+            to: "\(ribDir)/OnboardingInteractor.swift"
+        )
+        try write(
+            OnboardingTemplate.renderRouter(),
+            to: "\(ribDir)/OnboardingRouter.swift"
+        )
+        try write(
+            OnboardingTemplate.renderWelcomeView(appName: config.appName),
+            to: "\(welcomeDir)/WelcomeView.swift"
+        )
+        try write(
+            OnboardingTemplate.renderWelcomePresenter(),
+            to: "\(welcomeDir)/WelcomePresenter.swift"
+        )
+        try write(
+            OnboardingTemplate.renderCompletedView(),
+            to: "\(completedDir)/OnboardingCompletedView.swift"
+        )
+        try write(
+            OnboardingTemplate.renderCompletedPresenter(),
+            to: "\(completedDir)/OnboardingCompletedPresenter.swift"
+        )
+    }
 
 	// MARK: - Localization Files
 
@@ -274,6 +401,37 @@ struct FileGenerator {
 			TestTagsTemplate.render(config: config),
 			to: "\(testsDir)/Tags.swift"
 		)
+	}
+
+	// MARK: - SwiftLint Config
+
+	private func writeLintingConfig(root: String) throws {
+		let content = """
+		excluded:
+		  - .build
+		  - Packages
+
+		opt_in_rules:
+		  - empty_count
+		  - closure_spacing
+		  - force_unwrapping
+
+		analyzer_rules:
+		  - unused_import
+		"""
+		try write(content, to: "\(root)/.swiftlint.yml")
+	}
+
+	// MARK: - SwiftFormat Config
+
+	private func writeFormattingConfig(root: String) throws {
+		let content = """
+		--swiftversion \(config.swiftVersion)
+		--indent 4
+		--importgrouping testable-bottom
+		--wrapcollections before-first
+		"""
+		try write(content, to: "\(root)/.swiftformat")
 	}
 
 	// MARK: - Write Helper

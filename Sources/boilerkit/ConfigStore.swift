@@ -1,5 +1,13 @@
 import Foundation
 
+// MARK: - SwiftPackage
+
+struct SwiftPackage: Codable, Equatable {
+    var name: String
+    var url: String
+    var branch: String
+}
+
 // MARK: - BoilerkitConfig
 
 struct BoilerkitConfig: Codable {
@@ -8,6 +16,7 @@ struct BoilerkitConfig: Codable {
 
     var defaultOutputDirectory: String?
     var defaultTeamID: String?
+    var defaultPackages: [SwiftPackage] = []
 }
 
 // MARK: - ConfigStore

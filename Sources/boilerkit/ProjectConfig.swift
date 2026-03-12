@@ -54,10 +54,14 @@ struct ProjectConfig {
     let swiftDataEntityName: String?
     let tabs: [Tab]
     let teamID: String?
-    let navigationKitURL: String
+    let packages: [SwiftPackage]
     let outputDirectory: String
     let useLocalization: Bool
     let localizationLanguages: [String]
+    let useLinting: Bool
+    let useFormatting: Bool
+    let useDevSettings: Bool
+    let useOnboarding: Bool
 
     // MARK: - Computed
 
