@@ -71,7 +71,6 @@ struct XcodeGenRunner {
             info:
               path: \(config.appName)/Info.plist
               properties:
-                CFBundleDisplayName: \(config.appName)
                 CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
                 CFBundleShortVersionString: "$(MARKETING_VERSION)"
                 UILaunchScreen: {}
