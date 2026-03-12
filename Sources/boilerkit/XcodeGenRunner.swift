@@ -155,7 +155,7 @@ struct XcodeGenRunner {
 
     private func packagesYML() -> String {
         let entries = config.packages.map { pkg in
-            "  \(pkg.name):\n    url: \(pkg.url)\n    branch: \"main\""
+            "  \(pkg.name):\n    url: \(pkg.url)\n    branch: \"\(pkg.branch)\""
         }.joined(separator: "\n")
         return "packages:\n\(entries)"
     }

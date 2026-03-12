@@ -1,9 +1,12 @@
 // MARK: - DevSettingsTemplate
 
 enum DevSettingsTemplate {
-    static func render(appName: String) -> String {
-        return """
-        import SwiftUI
+
+    // MARK: - Interactor
+
+    static func renderInteractor() -> String {
+        """
+        import Foundation
         import NavigationKit
 
         // MARK: - DevSettingsInteractor
@@ -14,6 +17,15 @@ enum DevSettingsTemplate {
         }
 
         extension CoreInteractor: DevSettingsInteractor {}
+        """
+    }
+
+    // MARK: - Router
+
+    static func renderRouter() -> String {
+        """
+        import Foundation
+        import NavigationKit
 
         // MARK: - DevSettingsRouter
 
@@ -23,6 +35,14 @@ enum DevSettingsTemplate {
         }
 
         extension CoreRouter: DevSettingsRouter {}
+        """
+    }
+
+    // MARK: - Presenter
+
+    static func renderPresenter() -> String {
+        """
+        import Foundation
 
         // MARK: - DevSettingsPresenter
 
@@ -48,6 +68,15 @@ enum DevSettingsTemplate {
                 router.dismissDevSettings()
             }
         }
+        """
+    }
+
+    // MARK: - View
+
+    static func renderView() -> String {
+        """
+        import SwiftUI
+        import NavigationKit
 
         // MARK: - DevSettingsView
 

@@ -88,7 +88,11 @@ struct FileGenerator {
 		}
 
         let devSettingsDirs = config.useDevSettings
-            ? ["\(root)/\(config.appName)/Core/DevSettings"]
+            ? [
+                "\(root)/\(config.appName)/Core/DevSettings",
+                "\(root)/\(config.appName)/Core/DevSettings/RIB",
+                "\(root)/\(config.appName)/Core/DevSettings/Presentation",
+            ]
             : []
 
         let onboardingDirs = config.useOnboarding
@@ -246,8 +250,20 @@ struct FileGenerator {
     private func writeDevSettingsFiles(root: String) throws {
         let devSettingsDir = "\(root)/\(config.appName)/Core/DevSettings"
         try write(
-            DevSettingsTemplate.render(appName: config.appName),
-            to: "\(devSettingsDir)/DevSettingsView.swift"
+            DevSettingsTemplate.renderInteractor(),
+            to: "\(devSettingsDir)/RIB/DevSettingsInteractor.swift"
+        )
+        try write(
+            DevSettingsTemplate.renderRouter(),
+            to: "\(devSettingsDir)/RIB/DevSettingsRouter.swift"
+        )
+        try write(
+            DevSettingsTemplate.renderPresenter(),
+            to: "\(devSettingsDir)/Presentation/DevSettingsPresenter.swift"
+        )
+        try write(
+            DevSettingsTemplate.renderView(),
+            to: "\(devSettingsDir)/Presentation/DevSettingsView.swift"
         )
     }
 

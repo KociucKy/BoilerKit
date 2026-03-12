@@ -126,7 +126,7 @@ extension Boilerkit {
         @Option(name: .long, help: "Set the default Apple Team ID.")
         var teamId: String?
 
-        @Option(name: .long, help: "Add a default package (format: \"Name=https://url\").")
+        @Option(name: .long, help: "Add a default package (format: \"Name=https://url=branch\").")
         var addPackage: [String] = []
 
         @Option(name: .long, help: "Remove a default package by name.")
@@ -164,24 +164,21 @@ extension Boilerkit {
                         print("  ✅ Default Team ID cleared.")
                     }
                     for raw in addPackage {
-                        guard let eqRange = raw.firstIndex(of: "=") else {
-                            print("  ⚠️  Skipping '\(raw)' — format must be Name=https://url")
+                        let parts = raw.split(separator: "=", maxSplits: 2).map(String.init)
+                        guard parts.count == 3, !parts[0].isEmpty, !parts[1].isEmpty, !parts[2].isEmpty else {
+                            print("  ⚠️  Skipping '\(raw)' — format must be Name=https://url=branch")
                             continue
                         }
-                        let name = String(raw[raw.startIndex..<eqRange])
-                        let url = String(raw[raw.index(after: eqRange)...])
-                        guard !name.isEmpty, !url.isEmpty else {
-                            print("  ⚠️  Skipping '\(raw)' — name and URL must not be empty")
-                            continue
-                        }
+                        let (name, url, branch) = (parts[0], parts[1], parts[2])
                         if let existing = config.defaultPackages.firstIndex(where: {
                             $0.name.lowercased() == name.lowercased()
                         }) {
                             config.defaultPackages[existing].url = url
-                            print("  ✅ Updated package '\(name)' to: \(url)")
+                            config.defaultPackages[existing].branch = branch
+                            print("  ✅ Updated package '\(name)': \(url) (\(branch))")
                         } else {
-                            config.defaultPackages.append(SwiftPackage(name: name, url: url))
-                            print("  ✅ Added default package '\(name)': \(url)")
+                            config.defaultPackages.append(SwiftPackage(name: name, url: url, branch: branch))
+                            print("  ✅ Added default package '\(name)': \(url) (\(branch))")
                         }
                     }
                     for name in removePackage {
@@ -216,7 +213,7 @@ extension Boilerkit {
             } else {
                 print("  Default packages:")
                 for pkg in config.defaultPackages {
-                    print("    - \(pkg.name)  \(pkg.url)")
+                    print("    - \(pkg.name)  \(pkg.url)  (\(pkg.branch))")
                 }
             }
             print("  ──────────────────────────────────────")

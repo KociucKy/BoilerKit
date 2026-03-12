@@ -299,7 +299,8 @@ struct Wizard {
 
     private static let navigationKit = SwiftPackage(
         name: "NavigationKit",
-        url: "https://github.com/KociucKy/NavigationKit"
+        url: "https://github.com/KociucKy/NavigationKit",
+        branch: "master"
     )
 
     private mutating func askPackages(stored: [SwiftPackage]) -> [SwiftPackage] {
@@ -322,7 +323,7 @@ struct Wizard {
                 for (i, pkg) in displayList.enumerated() {
                     let mark = selected[i] ? "x" : " "
                     let index = String(format: "%2d", i + 1)
-                    print("     [\(mark)] \(index). \(pkg.name)  \(pkg.url)")
+                    print("     [\(mark)] \(index). \(pkg.name)  \(pkg.url)  (\(pkg.branch))")
                 }
                 print("")
                 let input = askSub("Toggle numbers to deselect (e.g. 1 2), or press Enter to confirm: ")
@@ -348,18 +349,18 @@ struct Wizard {
 
         // Allow adding extra packages for this run
         print("")
-        print("  Add more packages? Enter \"Name https://url\" or press Enter to skip.")
+        print("  Add more packages? Enter \"Name https://url branch\" or press Enter to skip.")
         while true {
             let input = askSub("  Package (or Enter to finish): ")
             let trimmed = input.trimmingCharacters(in: .whitespaces)
             guard !trimmed.isEmpty else { break }
 
-            let parts = trimmed.split(separator: " ", maxSplits: 1).map(String.init)
-            guard parts.count == 2 else {
-                printError("Format must be: Name https://url")
+            let parts = trimmed.split(separator: " ", maxSplits: 2).map(String.init)
+            guard parts.count == 3 else {
+                printError("Format must be: Name https://url branch")
                 continue
             }
-            packages.append(SwiftPackage(name: parts[0], url: parts[1]))
+            packages.append(SwiftPackage(name: parts[0], url: parts[1], branch: parts[2]))
         }
 
         return packages
