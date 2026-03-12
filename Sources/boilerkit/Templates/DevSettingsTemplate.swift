@@ -93,7 +93,7 @@ enum DevSettingsTemplate {
                     .navigationTitle("Dev Settings")
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
-                        ToolbarItem(placement: .topBarTrailing) {
+                        ToolbarItem(placement: .cancellationAction) {
                             Button("Close") {
                                 presenter.dismiss()
                             }
