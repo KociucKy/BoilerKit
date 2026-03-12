@@ -97,35 +97,20 @@ struct Wizard {
     // MARK: - Platforms
 
     private mutating func askPlatforms() -> [Platform] {
-        print("  Target platforms (iOS is always included):")
-        print("    1. macOS")
-        print("    2. watchOS")
-        print("    3. tvOS")
-        print("    4. visionOS")
-        print("")
+        let optional: [(platform: Platform, description: String)] = [
+            (.macOS,    "Mac Catalyst / native macOS"),
+            (.watchOS,  "Apple Watch"),
+            (.tvOS,     "Apple TV"),
+            (.visionOS, "Apple Vision Pro"),
+        ]
 
-        let input = ask("Add platforms? Enter numbers separated by spaces, or press Enter to skip: ")
-        let trimmed = input.trimmingCharacters(in: .whitespaces)
+        let selected = selectMultiple(
+            title: "  📱 Platforms (iOS is always included):",
+            options: optional.map { (name: $0.platform.rawValue, description: $0.description) },
+            defaults: Array(repeating: false, count: optional.count)
+        )
 
-        var platforms: [Platform] = [.iOS]
-
-        guard !trimmed.isEmpty else { return platforms }
-
-        let choices = trimmed.split(separator: " ").compactMap { Int($0) }
-        let optional: [Platform] = [.macOS, .watchOS, .tvOS, .visionOS]
-
-        for choice in choices {
-            guard choice >= 1, choice <= optional.count else {
-                printWarning("Ignoring unknown platform option: \(choice)")
-                continue
-            }
-            let platform = optional[choice - 1]
-            if !platforms.contains(where: { $0.rawValue == platform.rawValue }) {
-                platforms.append(platform)
-            }
-        }
-
-        return platforms
+        return [.iOS] + zip(optional, selected).compactMap { $0.1 ? $0.0.platform : nil }
     }
 
     // MARK: - Deployment Targets
@@ -207,7 +192,7 @@ struct Wizard {
 
     private mutating func askCodeQualityTools() -> (useLinting: Bool, useFormatting: Bool) {
         let result = selectMultiple(
-            title: "  👉 Code quality tools:",
+            title: "  🔧 Code quality tools:",
             options: [
                 (name: "SwiftLint",   description: "linting"),
                 (name: "SwiftFormat", description: "formatting"),
