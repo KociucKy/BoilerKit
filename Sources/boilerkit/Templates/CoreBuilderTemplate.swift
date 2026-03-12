@@ -19,6 +19,7 @@ enum CoreBuilderTemplate {
 
         let devSettingsMethod = config.useDevSettings ? """
 
+
                 func devSettingsView(router: Router) -> some View {
                     DevSettingsView(
                         presenter: DevSettingsPresenter(
@@ -35,39 +36,40 @@ enum CoreBuilderTemplate {
         if isSingleTab, let tab = config.tabs.first {
             buildBody = """
                     RouterView { router in
-                            \(tab.sanitizedName.lowercased())View(router: router)
-                        }
-                        .any()
+                        \(tab.sanitizedName.lowercased())View(router: router)
+                    }
+                    .any()
             """
             tabBarSection = ""
         } else {
             let tabScreens = config.tabs.map { tab in
                 """
-                            TabBarScreen(
-                                title: "\(tab.sanitizedName)",
-                                systemImage: "\(tab.sfSymbol)",
-                                screen: {
-                                    RouterView { router in
-                                        \(tab.sanitizedName.lowercased())View(router: router)
-                                    }
-                                    .any()
+                        TabBarScreen(
+                            title: "\(tab.sanitizedName)",
+                            systemImage: "\(tab.sfSymbol)",
+                            screen: {
+                                RouterView { router in
+                                    \(tab.sanitizedName.lowercased())View(router: router)
                                 }
-                            )
+                                .any()
+                            }
+                        )
                 """
             }.joined(separator: ",\n")
 
             buildBody = "tabBarView().any()"
             tabBarSection = """
 
-                    // MARK: - Tab Bar
 
-                    func tabBarView() -> some View {
-                        TabBarView(
-                            tabs: [
+                // MARK: - Tab Bar
+
+                func tabBarView() -> some View {
+                    TabBarView(
+                        tabs: [
             \(tabScreens)
-                            ]
-                        )
-                    }
+                        ]
+                    )
+                }
             """
         }
 

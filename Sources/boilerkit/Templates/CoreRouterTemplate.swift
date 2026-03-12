@@ -5,7 +5,7 @@ enum CoreRouterTemplate {
         let devSettingsMethods = config.useDevSettings ? """
 
                 func presentDevSettings() {
-                    router.showScreen(.sheet) { router in
+                    router.showScreen(.sheet, onDismiss: nil) { router in
                         builder.devSettingsView(router: router)
                     }
                 }

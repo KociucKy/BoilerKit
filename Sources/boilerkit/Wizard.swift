@@ -304,47 +304,22 @@ struct Wizard {
     )
 
     private mutating func askPackages(stored: [SwiftPackage]) -> [SwiftPackage] {
-        // Build the display list: NavigationKit is always first and pinned selected.
-        // Saved packages follow, all pre-selected.
         let savedPackages = stored.filter { $0.name != Self.navigationKit.name }
-        let displayList = savedPackages  // NavigationKit shown separately as pinned
-        var selected = Array(repeating: true, count: displayList.count)
-
-        if displayList.isEmpty {
-            // No saved packages — just show NavigationKit as pinned and skip selection UI
-            print("")
-            print("  [x] NavigationKit (always included)")
-        } else {
-            print("")
-            print("  Packages ([x] = included):")
-            print("     [x] NavigationKit  (always included)")
-
-            while true {
-                for (i, pkg) in displayList.enumerated() {
-                    let mark = selected[i] ? "x" : " "
-                    let index = String(format: "%2d", i + 1)
-                    print("     [\(mark)] \(index). \(pkg.name)  \(pkg.url)  (\(pkg.branch))")
-                }
-                print("")
-                let input = askSub("Toggle numbers to deselect (e.g. 1 2), or press Enter to confirm: ")
-                let trimmed = input.trimmingCharacters(in: .whitespaces)
-                guard !trimmed.isEmpty else { break }
-
-                let indices = trimmed.split(separator: " ").compactMap { Int($0) }
-                for idx in indices {
-                    guard idx >= 1, idx <= displayList.count else {
-                        printWarning("Ignoring unknown package number: \(idx)")
-                        continue
-                    }
-                    selected[idx - 1].toggle()
-                }
-                print("")
-            }
-        }
 
         var packages: [SwiftPackage] = [Self.navigationKit]
-        for (i, pkg) in displayList.enumerated() where selected[i] {
-            packages.append(pkg)
+
+        if !savedPackages.isEmpty {
+            let selected = selectMultiple(
+                title: "  📦 Packages (NavigationKit always included):",
+                options: savedPackages.map { (name: $0.name, description: "\($0.url)  (\($0.branch))") },
+                defaults: Array(repeating: true, count: savedPackages.count)
+            )
+            for (pkg, isSelected) in zip(savedPackages, selected) where isSelected {
+                packages.append(pkg)
+            }
+        } else {
+            print("")
+            print("  [x] NavigationKit (always included)")
         }
 
         // Allow adding extra packages for this run

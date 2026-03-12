@@ -89,7 +89,7 @@ enum OnboardingTemplate {
         // MARK: - OnboardingRouter
 
         @MainActor
-        struct OnboardingRouter: GlobalRouter {
+        struct OnboardingRouter {
 
             // MARK: - Properties
 
@@ -99,7 +99,7 @@ enum OnboardingTemplate {
             // MARK: - Navigation
 
             func showOnboardingCompletedView() {
-                router.showScreen(.push) { router in
+                router.showScreen(.push, onDismiss: nil) { router in
                     builder.onboardingCompletedView(router: router)
                 }
             }
@@ -161,7 +161,7 @@ enum OnboardingTemplate {
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 55)
-                        .background(.accent)
+                        .background(.tint)
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                 }
             }
@@ -248,7 +248,7 @@ enum OnboardingTemplate {
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 55)
-                        .background(.accent)
+                        .background(.tint)
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                 }
             }

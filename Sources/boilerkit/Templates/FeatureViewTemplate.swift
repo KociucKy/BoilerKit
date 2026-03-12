@@ -85,50 +85,82 @@ enum FeatureViewTemplate {
     static func renderView(tab: Tab, isFirst: Bool, useDevSettings: Bool) -> String {
         let feature = tab.sanitizedName
         let featureLower = feature.lowercased()
-        let devSettingsToolbar = useDevSettings && isFirst ? """
 
-            #if DEBUG
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        presenter.showDevSettings()
-                    } label: {
-                        Image(systemName: "hammer.fill")
-                    }
+        if useDevSettings && isFirst {
+            return """
+            import SwiftUI
+            import NavigationKit
+
+            // MARK: - \(feature)View
+
+            struct \(feature)View: View {
+
+                // MARK: - Properties
+
+                @State var presenter: \(feature)Presenter
+
+                // MARK: - Body
+
+                var body: some View {
+                    Text("\(feature)")
+                        .navigationTitle("\(feature)")
+                        .toolbar {
+                            #if DEBUG
+                            ToolbarItem(placement: .topBarTrailing) {
+                                Button {
+                                    presenter.showDevSettings()
+                                } label: {
+                                    Image(systemName: "hammer.fill")
+                                }
+                            }
+                            #endif
+                        }
                 }
             }
-            #endif
-        """ : ""
-        return """
-        import SwiftUI
-        import NavigationKit
 
-        // MARK: - \(feature)View
+            // MARK: - Preview
 
-        struct \(feature)View: View {
+            #Preview {
+                let container = DevPreview.shared.container
+                let builder = CoreBuilder(interactor: CoreInteractor(container: container))
 
-            // MARK: - Properties
-
-            @State var presenter: \(feature)Presenter
-
-            // MARK: - Body
-
-            var body: some View {
-                Text("\(feature)")
-                    .navigationTitle("\(feature)")\(devSettingsToolbar)
+                return RouterView { router in
+                    builder.\(featureLower)View(router: router)
+                }
             }
-        }
+            """
+        } else {
+            return """
+            import SwiftUI
+            import NavigationKit
 
-        // MARK: - Preview
+            // MARK: - \(feature)View
 
-        #Preview {
-            let container = DevPreview.shared.container
-            let builder = CoreBuilder(interactor: CoreInteractor(container: container))
+            struct \(feature)View: View {
 
-            return RouterView { router in
-                builder.\(featureLower)View(router: router)
+                // MARK: - Properties
+
+                @State var presenter: \(feature)Presenter
+
+                // MARK: - Body
+
+                var body: some View {
+                    Text("\(feature)")
+                        .navigationTitle("\(feature)")
+                }
             }
+
+            // MARK: - Preview
+
+            #Preview {
+                let container = DevPreview.shared.container
+                let builder = CoreBuilder(interactor: CoreInteractor(container: container))
+
+                return RouterView { router in
+                    builder.\(featureLower)View(router: router)
+                }
+            }
+            """
         }
-        """
     }
 }
