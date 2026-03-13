@@ -56,22 +56,22 @@ Running `boilerkit` starts an interactive prompt. Questions are asked in a fixed
 
 ### Wizard questions
 
-| # | Question | Default |
-|---|---|---|
-| 1 | App name | _(required)_ |
-| 2 | Bundle ID | `com.yourcompany.<appname>` |
-| 3 | Apple Team ID | _(skipped if stored)_ |
-| 4 | Target platforms | iOS only |
-| 5 | Deployment targets | per-platform OS minimum |
-| 6 | Swift version | `6.0` |
-| 7 | SwiftData | yes |
-| 8 | Localizations | no |
-| 9 | Code quality tools | SwiftLint on, SwiftFormat off |
-| 10 | Tabs | _(required, 1–6)_ |
-| 11 | DevSettings | no |
-| 12 | Onboarding | no |
-| 13 | Packages | NavigationKit (always included) |
-| 14 | Output directory | _(skipped if stored)_ |
+| # | Question | Input style | Default |
+|---|---|---|---|
+| 1 | App name | text | _(required)_ |
+| 2 | Bundle ID | text | `com.yourcompany.<appname>` |
+| 3 | Apple Team ID | text | _(skipped if stored)_ |
+| 4 | Target platforms | multiselect | iOS only |
+| 5 | Deployment targets | text per platform | per-platform OS minimum |
+| 6 | Swift version | text | `6.0` |
+| 7 | SwiftData | yes/no | yes |
+| 8 | Localizations | yes/no + multiselect | no |
+| 9 | Code quality tools | multiselect | SwiftLint on, SwiftFormat off |
+| 10 | Tabs | number + text per tab | _(required, 1–6)_ |
+| 11 | DevSettings | yes/no | no |
+| 12 | Onboarding | yes/no | no |
+| 13 | Packages | multiselect + free text | NavigationKit (always included) |
+| 14 | Output directory | text | _(skipped if stored)_ |
 
 Run `boilerkit generate --help` for a full description of every question.
 
@@ -85,13 +85,15 @@ Run `boilerkit generate --help` for a full description of every question.
   👉 App name (e.g. MyApp, no spaces): MyApp
   👉 Bundle ID [com.yourcompany.myapp]: com.acme.myapp
   Team ID: ABCD1234 (default — run 'boilerkit config' to change)
-  Target platforms (iOS is always included):
-    1. macOS
-    2. watchOS
-    3. tvOS
-    4. visionOS
 
-  👉 Add platforms? Enter numbers separated by spaces, or press Enter to skip:
+  📱 Platforms (iOS is always included):
+
+     ▶ [ ]  macOS  (Mac Catalyst / native macOS)
+       [ ]  watchOS  (Apple Watch)
+       [ ]  tvOS  (Apple TV)
+       [ ]  visionOS  (Apple Vision Pro)
+     ↑↓ move   Space toggle   Enter confirm
+
   Deployment targets (press Enter to accept defaults):
      iOS [18.0]:
   👉 Swift version [6.0]:
@@ -99,18 +101,19 @@ Run `boilerkit generate --help` for a full description of every question.
      First entity name (e.g. Item), or press Enter to skip: Task
   👉 Add localizations? [y/N]: y
 
-  Available languages (English is always included):
-    1. Polish (pl)
-    2. German (de)
-    ...
+  🌍 Languages (English is always included):
 
-     Enter numbers separated by spaces, or press Enter to skip: 1 2
+     ▶ [ ]  Polish  (pl)
+       [ ]  German  (de)
+       ...
+     ↑↓ move   Space toggle   Enter confirm
 
-  Code quality tools ([x] = included):
-     [x]  1. SwiftLint  (linting)
-     [ ]  2. SwiftFormat  (formatting)
+  🔧 Code quality tools:
 
-     Toggle numbers to change (e.g. 1 2), or press Enter to confirm:
+     ▶ [x]  SwiftLint  (linting)
+       [ ]  SwiftFormat  (formatting)
+     ↑↓ move   Space toggle   Enter confirm
+
   👉 Number of tabs (1–6): 3
 
   Configure each tab (name + SF Symbol):
@@ -123,9 +126,14 @@ Run `boilerkit generate --help` for a full description of every question.
   Tab 3:
       Name (e.g. Home): Settings
       SF Symbol [circle]: gearshape
-  👉 Add DevSettingsView (accessible from first tab toolbar in DEBUG builds)? [y/N]: n
+  👉 Add DevSettingsView (accessible from first tab toolbar in Dev/Mock builds)? [y/N]: n
   👉 Add onboarding flow (WelcomeView → OnboardingCompletedView)? [y/N]: y
-  [x] NavigationKit (always included)
+
+  📦 Packages (NavigationKit always included):
+
+     ▶ [x]  FulhamKit  (https://github.com/...)
+     ↑↓ move   Space toggle   Enter confirm
+
   Output: ~/Developer (default — run 'boilerkit config' to change)
 
   ──────────────────────────────────────
@@ -315,11 +323,11 @@ let manager: TaskManager = container.resolve()
 
 ### Build configurations
 
-| Config | Type | Scheme | Compiler flag | Bundle ID suffix |
-|---|---|---|---|---|
-| Mock | debug | `MyApp - Mock` | `MOCK` | `.mock` |
-| Debug | debug | `MyApp - Dev` | `DEV` | `.dev` |
-| Release | release | `MyApp - Prod` | _(none)_ | _(none)_ |
+| Config | Type | Scheme | Compiler flag | Bundle ID suffix | Display name |
+|---|---|---|---|---|---|
+| Mock | debug | `MyApp - Mock` | `MOCK` | `.mock` | `MyApp - Mock` |
+| Debug | debug | `MyApp - Dev` | `DEV` | `.dev` | `MyApp - Dev` |
+| Release | release | `MyApp - Prod` | _(none)_ | _(none)_ | `MyApp` |
 
 Use compile-time branching to swap implementations:
 
